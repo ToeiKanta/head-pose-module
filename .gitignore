@@ -9,7 +9,9 @@ face_detection/weights/
 !face_detection/weights/*.md
 # C extensions
 *.so
-
+# Video
+*.MOV
+*.mp4
 # Distribution / packaging
 .Python
 build/
