@@ -158,7 +158,7 @@ class HeadposeDetection():
         return res
     
     # return image and angles
-    def process_image(self, im, draw=True, ma=3):
+    def process_image(self, im, draw=True, ma=1):
         # landmark Detection
         im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         landmarks_2d, bbox = self.get_landmarks(im_gray)
