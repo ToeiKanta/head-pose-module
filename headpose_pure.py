@@ -63,8 +63,8 @@ class HeadposeDetection():
         [33, 36, 39, 42, 45] # 5 points
     ]
 
-    def __init__(self, lm_type=1, predictor="model/shape_predictor_68_face_landmarks.dat", verbose=True):
-        self.bbox_detector = dlib.get_frontal_face_detector()        
+    def __init__(self, lm_type=1, predictor="model/shape_predictor_68_face_landmarks.dat", verbose=False):
+        # self.bbox_detector = RetinaFace(gpu_id=0)
         self.landmark_predictor = dlib.shape_predictor(predictor)
 
         self.lm_2d_index = self.lm_2d_index_list[lm_type]
@@ -79,30 +79,33 @@ class HeadposeDetection():
             coords += [[landmarks.part(i).x, landmarks.part(i).y]]
         return np.array(coords).astype(np.int)
 
-    def get_landmarks(self, im):
+    def get_landmarks(self, im, box):
+        # bbox_detector = RetinaFace(gpu_id=0)
+
         # Detect bounding boxes of faces
         t.tic('bb')
-        rects = self.bbox_detector(im, 0) if im is not None else []
         
+        # faces = bbox_detector(im) if im is not None else []
         if self.v: 
             print(', bb: %.2f' % t.toc('bb'), end='ms')
 
-        if len(rects) > 0:
-            # Detect landmark of first face
-            t.tic('lm')
-            landmarks_2d = self.landmark_predictor(im, rects[0])
-            # print(f' type rects[0] {type(rects[0])}')
-            # Choose specific landmarks corresponding to 3D facial model
-            landmarks_2d = self.to_numpy(landmarks_2d)
-            if self.v: 
-                print(', lm: %.2f' % t.toc('lm'), end='ms')
-                
-            rect = [rects[0].left(), rects[0].top(), rects[0].right(), rects[0].bottom()]
+        # Detect landmark of first face
+        t.tic('lm')
+        face_box = [(int(box[0]), int(box[1])), (int(box[2]), int(box[3]))]
+        face_box = dlib.rectangle(left=box[0], top=box[1], right=box[2], bottom=box[3])
+        # face_box = np.ar///ray(face_box).astype(int)
+        # print(f'type(face_box)//// {type(face_box)}')
+        landmarks_2d = self.landmark_predictor(im, face_box)
 
-            return landmarks_2d.astype(np.double), rect
+        # Choose specific landmarks corresponding to 3D facial model
+        landmarks_2d = self.to_numpy(landmarks_2d)
+        if self.v: 
+            print(', lm: %.2f' % t.toc('lm'), end='ms')
+            
+        rect = [box[0], box[1], box[2], box[3]]
 
-        else:
-            return None, None
+        return landmarks_2d.astype(np.double), rect
+
 
 
     def get_headpose(self, im, landmarks_2d, verbose=False):
@@ -159,10 +162,10 @@ class HeadposeDetection():
         return res
     
     # return image and angles
-    def process_image(self, im, draw=True, ma=1):
+    def process_image(self, im, box, draw=True, ma=1):
         # landmark Detection
-        im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        landmarks_2d, bbox = self.get_landmarks(im_gray)
+        # im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+        landmarks_2d, bbox = self.get_landmarks(im,box)
 
         # if no face deteced, return original image
         if landmarks_2d is None:

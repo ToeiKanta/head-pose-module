@@ -39,6 +39,7 @@ class Annotator():
         h, w, c = im.shape
         self.fs = ((h + w) / 2) / 500
         self.ls = round(self.fs * 2)
+        self.ls = 1
         self.ps = self.ls
 
 
