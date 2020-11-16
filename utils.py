@@ -44,11 +44,11 @@ class Annotator():
 
 
     def draw_all(self):
-        self.draw_bbox()
+        # self.draw_bbox()
         self.draw_landmarks()
         self.draw_axes()
         self.draw_direction()
-        self.draw_info()
+        # self.draw_info()
         return self.im
 
     def get_image(self):
@@ -86,7 +86,6 @@ class Annotator():
         p1 = self.nose
         p2 = tuple(nose_end_point2D[0, 0].astype(int))
         cv2.line(self.im, p1, p2, Color.yellow, self.ls)
-
 
     def draw_info(self, fontColor=Color.yellow):
         x, y, z = self.angles

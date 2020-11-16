@@ -4,7 +4,7 @@ import numpy as np
 import headpose_pure
 import argparse
 import os.path as osp
-
+import os
 from face_detection import RetinaFace
 
 
@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', metavar='FILE', dest='input_file', default=None, help='Input video. If not given, web camera will be used.')
     parser.add_argument('-o', metavar='FILE', dest='output_file', default=None, help='Output video.')
+    parser.add_argument('-fd', metavar='N', dest='fd', type=bool, default=False,help='force delete video output if existed.')
     parser.add_argument('-wh', metavar='N', dest='wh', default=[720, 480], nargs=2, help='Frame size.')
     parser.add_argument('-lt', metavar='N', dest='landmark_type', type=int, default=1, help='Landmark type.')
     parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', 
@@ -21,8 +22,8 @@ if __name__ == "__main__":
     # Initialize head pose detection
     hpd = headpose_pure.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
-    filename = './Test/Class.mp4'
-    scale = 0.5
+    filename = './Test/classroom.mp4'
+    scale = 0.8
     detector = RetinaFace(gpu_id=0)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -31,46 +32,54 @@ if __name__ == "__main__":
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     name, ext = osp.splitext(filename)
     out = cv2.VideoWriter(args["output_file"], fourcc, fps, (int(width*scale), int(height*scale)))
+    # if osp.exists(args["output_file"]) and args["fd"]:
+    #     os.remove(args["output_file"])
 
     # high performance at w: 540.0 h: 960.0
     print(f'w: {width*scale} h: {height*scale}')
 
-    count = 0
+    # intitial frame
+    count = 2000
+    cap.set(cv2.CAP_PROP_POS_FRAMES, count)
     while (cap.isOpened()):
-        if count <= 400:
-            count+=1
-            continue
         ret, img = cap.read()
         # img = cv2.flip(img,0)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        if img is None:
+            break
         img = cv2.resize(img, (int(width*scale) , int(height*scale)))
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
         faces = detector(img_rgb)
         # print(f'find face : {len(faces)}\n')
-        used_face = 0
+        used_face = 1
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
            
-            if score <= 0.2:
+            if score <= 0.3:
                 # print(f'\n skipped score <= 0.2 \n')
                 continue
             
             box = box.astype(np.int)
-            x = box[0]
-            y = box[1]
-            w = box[2]
-            h = box[3]
-            # head-pose
-            x2 = x-int((w-x)/2)
-            if x2 <= 0: 
-                x2 = 0
-            y2 = y-int((h-y)/2)
-            if y2 <= 0: 
-                y2 = 0
-            w2 = w + int((w-x)/2)
-            h2 = h + int((h-y)/2)
+            # x = box[0]
+            # y = box[1]
+            # w = box[2]
+            # h = box[3]
+            # # head-pose
+            # x2 = x-int((w-x)/5)
+            # if x2 <= 0: 
+            #     x2 = 0
+            # y2 = y-int((h-y)/5)
+            # if y2 <= 0: 
+            #     y2 = 0
+            # w2 = w + int((w-x)/5)
+            # h2 = h + int((h-y)/5)
+
+            # box[0] = x2
+            # box[1] = y2
+            # box[2] = w2
+            # box[3] = h2
+
             # cropped = img[y2:h2,x2:w2]
-            cropped = img[y2:h2,x2:w2]
             # cv2.imshow('img', cropped)
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     # headpose_pure.t.summary()
@@ -95,7 +104,7 @@ if __name__ == "__main__":
             #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
             # )
             used_face += 1
-        print(f'\rused face : {used_face}\n')    
+        # print(f'\rused face : {used_face}\n')    
         print('\rframe: %d' % count, end='')
         cv2.imshow('img', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -104,9 +113,10 @@ if __name__ == "__main__":
         out.write(img)#cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
         count += 1
         # close head-pose
-        # if count >= 200:
+        # if count >= 2100:
         #     break
     # When everything done, release the capture
     cap.release()
     out.release()
     cv2.destroyAllWindows()
+    print(f'\nEnd Success:')

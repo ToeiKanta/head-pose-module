@@ -5,6 +5,10 @@
 * https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python
 * https://github.com/lincolnhard/head-pose-estimation
 
+### Main file 
+* retinaface_video_n_head_pose.py
+* headpose_pure.py
+
 ### Requirements
 * Python 3.7
   * dlib
@@ -25,4 +29,4 @@
   * `python3.7 headpose_video.py`
 
 ### Demo
-[![](https://i.imgur.com/sdOM88J.png)](https://youtu.be/MMCbQCBtch8)
+[<img src="./img/back1.png">](https://photos.app.goo.gl/tA3Qd22tM2DzQNCD9)
