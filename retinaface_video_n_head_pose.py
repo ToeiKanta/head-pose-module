@@ -22,7 +22,7 @@ if __name__ == "__main__":
     hpd = headpose.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     filename = './Test/Class.mp4'
-    scale = 0.4
+    scale = 1
     detector = RetinaFace(gpu_id=-1)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -38,7 +38,10 @@ if __name__ == "__main__":
     count = 0
     while (cap.isOpened()):
         ret, img = cap.read()
-        img = cv2.flip(img,0)
+        if count <= 520 or count % 2 == 0:
+            count = count + 1
+            continue
+        # img = cv2.flip(img,0)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img, (int(width*scale) , int(height*scale)))
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -46,7 +49,7 @@ if __name__ == "__main__":
         faces = detector(img_rgb)
         print(f'find face : {len(faces)}\n')
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
-            if score <= 0.2:
+            if score <= 0.5:
                 # print(f'\n skipped score <= 0.2 \n')
                 continue
             box = box.astype(np.int)
@@ -70,8 +73,7 @@ if __name__ == "__main__":
             #     break
             # Display the resulting frame
             frame, angles = hpd.process_image(cropped)
-            # width, height = cropped.shape[:2]
-            # print(f'w: {width} h: {height}')
+            # print(f'w: {cropped.shape[0]} h: {cropped.shape[1]}')
             
             if frame is None: 
                 # draw head detector
@@ -88,12 +90,12 @@ if __name__ == "__main__":
             )
             
         print('\rframe: %d' % count, end='')
+        out.write(img)#cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+        count += 1
         # cv2.imshow('img', img)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     headpose.t.summary()
         #     break
-        out.write(img)#cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-        count += 1
         # close head-pose
         # if count >= 200:
         #     break
