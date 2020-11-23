@@ -30,7 +30,6 @@ class FaceRecognition_module:
         score.astype(np.int)
         box = box.astype(np.int)
         cv2.rectangle(frame, (box[0], box[1]), (box[2], box[3]), color=(255, 0, 0), thickness=1)
-        # face = frame[box[1]:box[1]+box[3], box[0]:box[0]+box[2]][:, :, ::-1]  # face position
         dRect = dlib.rectangle(left=box[0], top=box[1],
                             right=box[2], bottom=box[3])  # transform Opencv rectangle to dlib rectangle format
         shape = self.sp(frame, dRect)  #get landmarks
@@ -42,14 +41,12 @@ class FaceRecognition_module:
         idx = np.argmin(distance)
         if distance[idx] < 0.4:
             name = self.FACE_NAME[idx]
-            cv2.putText(frame, name, (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
+            # cv2.putText(frame, name, (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
         else:
-            cv2.putText(frame, 'unknow', (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
-        # cv2.imshow("", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     print("Terminate by user")
-        #     break
+            name = 'unknow'
+            # cv2.putText(frame, 'unknow', (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
         t1 = time.time()
-        print("frame")
-        print(f'took {round(t1 - t0, 3)} to process')
-        return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # print("frame")
+        # print(f'took {round(t1 - t0, 3)} to process')
+        return name
+    
