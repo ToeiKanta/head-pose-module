@@ -6,8 +6,9 @@
 * https://github.com/lincolnhard/head-pose-estimation
 
 ### Main file 
-* retinaface_video_n_head_pose.py
-* headpose_pure.py
+* retinaface_video_headpose_recog.py
+* headpose_module.py
+* FaceRecognition_module.py
 
 ### Requirements
 * Python 3.7
