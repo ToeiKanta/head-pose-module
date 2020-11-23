@@ -5,10 +5,11 @@ import os
 import pickle
 face_detector = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor('../FacialLandmarks/shape_predictor_68_face_landmarks.dat')
+sp = dlib.shape_predictor('../facialLandmarks/shape_predictor_68_face_landmarks.dat')
 model = dlib.face_recognition_model_v1('./dlib_face_recognition_resnet_model_v1.dat')
 FACE_DESC, FACE_NAME = pickle.load(open('trainset.pk', 'rb'))
-cap = cv2.VideoCapture('../Test/ZoomClass2.mp4')
+cap = cv2.VideoCapture('../TestVideo/test1.mp4')
+
 while True:
     _, frame = cap.read()
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -24,9 +25,9 @@ while True:
                 distance.append(np.linalg.norm(np.array(face_desc) - np.array(face_desc0)))
             distance = np.array(distance)
             idx = np.argmin(distance)
-            if distance[idx] < 0.9:
-                name = FACE_NAME[idx] + ' error :' + str(distance[idx])
-                # print(name)
+            if distance[idx] < 0.5:
+                name = FACE_NAME[idx]
+                print(name)
                 cv2.putText(frame, name, (x, y-5), cv2.FONT_HERSHEY_COMPLEX, 0.7,
                             (255, 255, 255), 2)
                 cv2.rectangle(frame, (x, y), (x+w, y+h), color=(255, 0, 0), thickness=1)

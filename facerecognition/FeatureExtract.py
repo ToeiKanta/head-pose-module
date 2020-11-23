@@ -4,10 +4,10 @@ import dlib
 import os
 import pickle
 
-path = './facedata/'
+path = '../face_detection/faces/tmp/'
 
 detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor('../FacialLandmarks/shape_predictor_68_face_landmarks.dat')
+sp = dlib.shape_predictor('../facialLandmarks/shape_predictor_68_face_landmarks.dat')
 model = dlib.face_recognition_model_v1('./dlib_face_recognition_resnet_model_v1.dat')
 
 FACE_DESC = []
@@ -18,10 +18,9 @@ for fn in os.listdir(path):
         dets = detector(img, 1)
         for k, d in enumerate(dets):
             shape = sp(img, d)
-            face_desc = model.compute_face_descriptor(img, shape, 100)
+            face_desc = model.compute_face_descriptor(img, shape, 200)
             FACE_DESC.append(face_desc)
             print('loading...', fn)
             FACE_NAME.append(fn[:fn.index('_')])
-
 print('ADD FACE DONE')
 pickle.dump((FACE_DESC, FACE_NAME), open('trainset.pk', 'wb'))
