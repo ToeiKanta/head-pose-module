@@ -8,7 +8,7 @@ detector = dlib.get_frontal_face_detector()
 sp = dlib.shape_predictor('../facialLandmarks/shape_predictor_68_face_landmarks.dat')
 model = dlib.face_recognition_model_v1('./dlib_face_recognition_resnet_model_v1.dat')
 FACE_DESC, FACE_NAME = pickle.load(open('trainset.pk', 'rb'))
-cap = cv2.VideoCapture('../TestVideo/test1.mp4')
+cap = cv2.VideoCapture('../Test/ZoomClass2.mp4')
 
 while True:
     _, frame = cap.read()
