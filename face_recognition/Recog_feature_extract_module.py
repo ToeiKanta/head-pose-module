@@ -17,6 +17,7 @@ def relative(path):
 detector = dlib.get_frontal_face_detector()
 sp = dlib.shape_predictor(relative('../facialLandmarks/shape_predictor_68_face_landmarks.dat'))
 model = dlib.face_recognition_model_v1(relative('./dlib_face_recognition_resnet_model_v1.dat'))
+picklePath = './tempmodel/trainset.pk'
 
 class Recog_feature_extract_module:
     def __init__(self):
@@ -24,11 +25,14 @@ class Recog_feature_extract_module:
         self.FACE_NAME = []
 
     def train(self,name,cropped):
-        dets = detector(cropped, 1)
-        for k, d in enumerate(dets):
-            shape = sp(cropped, d)
-            face_desc = model.compute_face_descriptor(cropped, shape, 200)
-            self.FACE_DESC.append(face_desc)
-            self.FACE_NAME.append(name)
+        self.FACE_DESC, self.FACE_NAME = pickle.load(open(relative(picklePath), 'rb'))
+        h, w, _ = cropped.shape
+        d = dlib.rectangle(left=0, top=0, right=w, bottom=h)
+        shape = sp(cropped, d)
+        face_desc = model.compute_face_descriptor(cropped, shape, 200)
+        self.FACE_DESC.append(face_desc)
+        self.FACE_NAME.append(name)
         print("ADD " + name + "'s face done..")
-        pickle.dump((self.FACE_DESC, self.FACE_NAME), open(relative('./tempmodel/trainset.pk'), 'ab'))
+        with open(relative(picklePath), 'wb') as f:
+            pickle.dump((self.FACE_DESC, self.FACE_NAME), f)
+            f.close()
