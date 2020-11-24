@@ -15,7 +15,7 @@ def relative(path):
 
 
 detector = dlib.get_frontal_face_detector()
-# sp = dlib.shape_predictor(relative('../facialLandmarks/shape_predictor_68_face_landmarks.dat'))
+sp = dlib.shape_predictor(relative('../facialLandmarks/shape_predictor_68_face_landmarks.dat'))
 model = dlib.face_recognition_model_v1(relative('./dlib_face_recognition_resnet_model_v1.dat'))
 
 class Recog_feature_extract_module:
@@ -23,10 +23,10 @@ class Recog_feature_extract_module:
         self.FACE_DESC = []
         self.FACE_NAME = []
 
-    def train(self,name,cropped,shape):
+    def train(self,name,cropped):
         dets = detector(cropped, 1)
         for k, d in enumerate(dets):
-            # shape = sp(cropped, d)
+            shape = sp(cropped, d)
             face_desc = model.compute_face_descriptor(cropped, shape, 200)
             self.FACE_DESC.append(face_desc)
             self.FACE_NAME.append(name)
