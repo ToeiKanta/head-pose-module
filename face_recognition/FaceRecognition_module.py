@@ -39,7 +39,7 @@ class FaceRecognition_module:
             distance.append(np.linalg.norm(np.array(face_desc) - np.array(face_desc0)))   # calculate distance between facebank and prediction
         distance = np.array(distance)
         idx = np.argmin(distance)
-        if distance[idx] < 0.4:
+        if distance[idx] < 0.7:
             name = self.FACE_NAME[idx]
             # cv2.putText(frame, name, (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
         else:
