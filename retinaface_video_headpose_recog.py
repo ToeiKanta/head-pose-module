@@ -8,12 +8,12 @@ from face_detection import RetinaFace
 import headpose_module
 from face_recognition import FaceRecognition_module
 from timer import Timer
-
+from face_recognition import Recog_feature_extract_module
+import pickle
 
 if __name__ == "__main__":
     t = Timer()
     users_in_img = [] # [[name,centerpoint(x,y),box,step]]
-
     # head-pose
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', metavar='FILE', dest='input_file', default=None, help='Input video. If not given, web camera will be used.')
@@ -21,14 +21,13 @@ if __name__ == "__main__":
     parser.add_argument('-fd', metavar='N', dest='fd', type=bool, default=False,help='force delete video output if existed.')
     parser.add_argument('-wh', metavar='N', dest='wh', default=[720, 480], nargs=2, help='Frame size.')
     parser.add_argument('-lt', metavar='N', dest='landmark_type', type=int, default=1, help='Landmark type.')
-    parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', 
-                        default='model/shape_predictor_68_face_landmarks.dat', help="Landmark predictor data file.")
+    parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', default='model/shape_predictor_68_face_landmarks.dat', help="Landmark predictor data file.")
     args = vars(parser.parse_args())
     # Initialize head pose detection
     hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     isRecognition = True
-    filename = './Test/Team.MOV'
+    filename = './Test/Class.mp4'
     scale = 0.4
     detector = RetinaFace(gpu_id=-1)
     cap = cv2.VideoCapture(filename)
@@ -38,14 +37,14 @@ if __name__ == "__main__":
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     name, ext = osp.splitext(filename)
     out = cv2.VideoWriter(args["output_file"], fourcc, fps, (int(width*scale), int(height*scale)))
-    if osp.exists(args["output_file"]) :
+    if osp.exists(args["output_file"]):
         os.remove(args["output_file"])
 
     # high performance at w: 540.0 h: 960.0
     print(f'w: {width*scale} h: {height*scale}')
 
     # intitial frame
-    start_frame = 0
+    start_frame = 2000 # 3000
     count = start_frame
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
     while (cap.isOpened()):
@@ -87,7 +86,7 @@ if __name__ == "__main__":
             # box[2] = w2
             # box[3] = h2
 
-            # cropped = img[y2:h2,x2:w2]
+            cropped = img[y:h,x:w]
             if isRecognition:
                 t.tic('REC')
                 center_point = ((w+x)/2,(h+y)/2)
@@ -97,8 +96,7 @@ if __name__ == "__main__":
                 for users in users_in_img:
                     nname,bbox,ccenter,step = users[:4]
                     if step >= 3:
-                        users_in_img.remove(user_index)
-                        user_index += 1
+                        users_in_img.pop(user_index)
                         continue
                     if (center_point[0]>=bbox[0] and center_point[0]<=bbox[2]) and (center_point[1]>=bbox[1] and center_point[1]<=bbox[3]):#(count-start_frame)%1 == 0 :
                         # use your saving user
@@ -113,15 +111,24 @@ if __name__ == "__main__":
                         if (count-start_frame)%10 == 0:
                             face_recognition = FaceRecognition_module()
                             user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
+                        feature_extract = Recog_feature_extract_module()
+                        cv2.imshow('img', cropped)
+                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                            break
+                        n = input("Please enter name:\n")
+                        if n != 'pass!':
+                            feature_extract.train(n,cropped)
+                            user_name = n
+                            users_in_img[user_index] = [user_name,box,center_point,0] # update position data
                     else:
-                        users_in_img[user_index] = [user_name,box,center_point,0]
+                        users_in_img[user_index] = [user_name,box,center_point,0] # update position data
                 elif not isSamePos:
                     # if new pos -> find who is him?
                     if (count-start_frame)%10 == 0:
                         face_recognition = FaceRecognition_module()
                         user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
                         users_in_img.append([user_name,box,center_point,0])
-                cv2.putText(img, user_name, (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.7,(255, 255, 255), 2)
+                cv2.putText(img, user_name, (box[0], box[1] - 5), cv2.FONT_HERSHEY_COMPLEX, 0.4,(255, 255, 255), 1)
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
