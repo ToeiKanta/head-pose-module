@@ -2,9 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-Test/
-output/
 mode/*.dat
+# my ignore
+Test/
+!Test/*.md
+output/
+!output/*.md
 face_detection/weights/
 !face_detection/weights/*.md
 # C extensions
