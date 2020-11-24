@@ -23,4 +23,4 @@ for fn in os.listdir(path):
             print('loading...', fn)
             FACE_NAME.append(fn[:fn.index('_')])
 print('ADD FACE DONE')
-pickle.dump((FACE_DESC, FACE_NAME), open('trainset.pk', 'wb'))
+pickle.dump((FACE_DESC, FACE_NAME), open('trainset.pk', 'ab'))
