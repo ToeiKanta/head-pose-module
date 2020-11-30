@@ -113,7 +113,7 @@ if __name__ == "__main__":
                         continue
                     if (center_point[0]>=bbox[0] and center_point[0]<=bbox[2]) and (center_point[1]>=bbox[1] and center_point[1]<=bbox[3]):#(count-start_frame)%1 == 0 :
                         # use your saving user
-                        users[3] = 0 # reset step
+                        users_in_img[user_index] = [users[0],users[1],users[2],0] # reset step
                         user_name = nname # load save
                         isSamePos = True
                         break
@@ -135,9 +135,9 @@ if __name__ == "__main__":
                             users_in_img[user_index] = [user_name,box,center_point,0] # update position data
                     else:
                         users_in_img[user_index] = [user_name,box,center_point,0] # update position data
-                elif not isSamePos:
+                else:
                     # if new pos -> find who is him?
-                    if (count-start_frame)%10 == 0:
+                    if name == '' or (count-start_frame)%10 == 0:
                         face_recognition = FaceRecognition_module()
                         user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
                         users_in_img.append([user_name,box,center_point,0])
@@ -149,14 +149,8 @@ if __name__ == "__main__":
             # print(f'w: {width} h: {height}')
             
             if frame is None: 
-                # draw head detector
-                # cv2.rectangle(
-                #     img, (x,y), (w,h), color=(255, 255, 255), thickness=1
-                # )
                 break
             else:
-                # frame = cv2.resize(cropped, (int(width*scale) , int(height*scale)))
-                # img[y2:h2,x2:w2] = frame;
                 img = frame
             # draw head detector
             # cv2.rectangle(
