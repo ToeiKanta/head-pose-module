@@ -10,8 +10,18 @@ from face_recognition import FaceRecognition_module
 from timer import Timer
 from face_recognition import Recog_feature_extract_module
 
+class Color():
+    blue = (255, 0, 0)
+    green = (0, 255, 0)
+    red = (0, 0, 255)
+    yellow = (0, 255, 255)
+    white = (255, 255, 255)
+    black = (0, 0, 0)
+
 if __name__ == "__main__":
     t = Timer()
+    # for saving position
+    boxId = 0
     users_in_img = [] # [[name,centerpoint(x,y),box,step]]
     # head-pose
     parser = argparse.ArgumentParser()
@@ -23,17 +33,21 @@ if __name__ == "__main__":
     parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', default='model/shape_predictor_68_face_landmarks.dat', help="Landmark predictor data file.")
     parser.add_argument('-sf', metavar='N', dest='start_frame', type=int, default=0, help='Start frame number.')
     parser.add_argument('-fl', metavar='N', dest='frame_limit', type=int, default=-1, help='Frame limit. (Default - will play until ended)')
+    parser.add_argument('-fs','--frame-skip', metavar='N', dest='frame_skip_number', type=int, default=1, help='Frame skip number. (Default - 1)')
     parser.add_argument('-flip', action='store_true', dest='flip_video', help='Flip video.')
     parser.add_argument('-scale', metavar='FLOAT', dest='video_scale', type=float, default=1.0, help='Video scale.')
     parser.add_argument('-nr','--no-recog',action='store_true', dest='close_recognition', help='Close Recognition mode.')
+    parser.add_argument('-nt','--no-train',action='store_true', dest='close_recognition_training', help='Close Recognition Training mode.')
     args = vars(parser.parse_args())
     # Initialize head pose detection
     hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     print('close_recognition : {}'.format(args["close_recognition"]))
+    frameSkipNumber = args["frame_skip_number"]
     isRecognition = not args["close_recognition"]
     filename = args["input_file"]
     scale = args["video_scale"]
+    isNoTrain = args["close_recognition_training"]
     detector = RetinaFace(gpu_id=-1)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -42,7 +56,7 @@ if __name__ == "__main__":
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     name, ext = osp.splitext(filename)
     outputPath = args["output_file"]
-    if args["force_delete"]:
+    if args["force_delete"] and osp.exists(outputPath):
         os.remove(outputPath)
     elif osp.exists(outputPath):
         ans = ''
@@ -63,6 +77,9 @@ if __name__ == "__main__":
     while (cap.isOpened()):
         t.tic('FF')
         ret, img = cap.read()
+        if(count % frameSkipNumber != 0): # process every n frame
+            count += 1
+            continue
         if args['flip_video']:
             img = cv2.flip(img,0)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -73,13 +90,12 @@ if __name__ == "__main__":
         
         faces = detector(img_rgb)
         # print(f'find face : {len(faces)}\n')
-        used_face = 1
+        used_face = 0
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
             
             if score <= 0.3:
                 # print(f'\n skipped score <= 0.2 \n')
                 continue
-            
             box = box.astype(np.int)
             x = box[0]
             y = box[1]
@@ -100,74 +116,84 @@ if __name__ == "__main__":
             # box[3] = h2
 
             cropped = img[y:h,x:w]
-            if isRecognition:
-                t.tic('REC')
-                center_point = ((w+x)/2,(h+y)/2)
-                isSamePos = False
-                user_name = ''
-                user_index = 0
-                for users in users_in_img:
-                    nname,bbox,ccenter,step = users[:4]
-                    if step >= 10:
-                        users_in_img.pop(user_index)
-                        continue
-                    if (center_point[0]>=bbox[0] and center_point[0]<=bbox[2]) and (center_point[1]>=bbox[1] and center_point[1]<=bbox[3]):#(count-start_frame)%1 == 0 :
-                        # use your saving user
-                        users_in_img[user_index] = [users[0],users[1],users[2],0] # reset step
-                        user_name = nname # load save
-                        isSamePos = True
-                        break
-                    user_index += 1
-                if isSamePos:
-                    if user_name == 'unknow':
-                        # if user not founded -> find who is him?
-                        if (count-start_frame)%10 == 0:
-                            face_recognition = FaceRecognition_module()
-                            user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
-                        feature_extract = Recog_feature_extract_module()
+######### For Recognition #########
+            t.tic('REC')
+            center_point = ((w+x)/2,(h+y)/2)
+            isSamePos = False
+            user_name = ''
+            user_index = 0
+            for users in users_in_img:
+                nname,bbox,ccenter,step = users[:4]
+                if (center_point[0]>=bbox[0] and center_point[0]<=bbox[2]) and (center_point[1]>=bbox[1] and center_point[1]<=bbox[3]):#(count-start_frame)%1 == 0 :
+                    # use your saving user
+                    users_in_img[user_index] = [users[0],users[1],users[2],0] # reset step
+                    user_name = nname # load save
+                    isSamePos = True
+                    break
+                user_index += 1
+            if isSamePos:
+                if user_name == 'unknow':
+                    # if user not founded -> find who is him?
+                    if isRecognition and (count-start_frame)%10 == 0:
+                        face_recognition = FaceRecognition_module()
+                        user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
+                    if not isNoTrain:
                         cv2.imshow('img', cropped)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
                         n = input("Please enter name: ")
                         if n != 'pass!':
+                            feature_extract = Recog_feature_extract_module()
                             feature_extract.train(n,cropped)
                             user_name = n
-                            users_in_img[user_index] = [user_name,box,center_point,0] # update position data
-                    else:
-                        users_in_img[user_index] = [user_name,box,center_point,0] # update position data
-                else:
-                    # if new pos -> find who is him?
-                    if name == '' or (count-start_frame)%10 == 0:
-                        face_recognition = FaceRecognition_module()
-                        user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
-                        users_in_img.append([user_name,box,center_point,0])
+                users_in_img[user_index] = [user_name,box,center_point,0] # update position data
+            else:
+                # if new pos -> find who is him?
+                boxId += 1
+                users_in_img.append(["b:"+str(boxId),box,center_point,0])
+                if isRecognition and (count-start_frame)%10 == 0:
+                    face_recognition = FaceRecognition_module()
+                    user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
+                    users_in_img.append([user_name,box,center_point,0])
+######### Close Recognition #########
+
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
-            frame, angles = hpd.process_image(img,box)
+            img, angles = hpd.process_image(img,box)
+
             # width, height = cropped.shape[:2]
             # print(f'w: {width} h: {height}')
             
-            if frame is None: 
+            if img is None: 
                 break
-            else:
-                img = frame
+            # else:
+                #### draw retina facial landmarks #######
+                # for p in landmarks:
+                #     point = tuple(p.astype(int))
+                #     cv2.circle(img, point, 1, Color.yellow,-1)
             # draw head detector
             # cv2.rectangle(
             #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
             # )
             used_face += 1
-        if isRecognition:
-            i = 0
-            user_list = ''
-            for users in users_in_img:
-                user_list += users[0] + ' '
-                users_in_img[i] = [users[0],users[1],users[2],users[3]+1] # step up
-                i += 1 # count index
-            print(f' users: {user_list} ')
-        # Write human name from data saving 
+        
+######### Draw Position Saved #########
+        i = 0
+        user_list = ''
         for users in users_in_img:
-            cv2.putText(img, users[0], (int(users[2][0]), int(users[2][1]) - 5), cv2.FONT_HERSHEY_COMPLEX, 0.4,(0, 255, 0), 1)
+            nname,bbox,ccenter,step = users[:4]
+            if step >= 3:
+                users_in_img.pop(i)
+                continue
+            user_list += users[0] + ' '
+            users_in_img[i] = [users[0],users[1],users[2],users[3]+1] # step up
+            i += 1 # count index
+            # Write Box's name from saving position
+            cv2.putText(img, users[0] + "(" + str(users[3]) + ")", (int(users[2][0]), int(users[2][1]) - 5), cv2.FONT_HERSHEY_COMPLEX, 0.4,(0, 255, 0), 1)
+        # print(f' boxs: {user_list} ')
+######### Close Draw Position Saved #########
+
         # print(f'\rused face : {used_face}\n')    
         # print('\rframe: %d \n' % count, end='')
         print('')

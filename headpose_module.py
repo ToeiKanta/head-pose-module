@@ -187,14 +187,12 @@ class HeadposeDetection():
         angles = self.get_angles(rvec, tvec)
         if self.v: 
             print(', ga: %.2f' % t.toc('ga'), end='ms')
-
         if draw:
             t.tic('draw')
             annotator = Annotator(im, angles, bbox, landmarks_2d, rvec, tvec, cm, dc, b=10.0)
             im = annotator.draw_all()
             if self.v: 
                 print(', draw: %.2f' % t.toc('draw'), end='ms' + ' ' * 10)
-         
         return im, angles
 
 
