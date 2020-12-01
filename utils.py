@@ -40,13 +40,13 @@ class Annotator():
         h, w, c = im.shape
         self.fs = ((h + w) / 2) / 500
         self.ls = round(self.fs * 2)
-        self.ls = 1
+        self.ls = 2
         self.ps = self.ls
 
 
     def draw_all(self):
-        self.draw_bbox()
-        self.draw_landmarks()
+        # self.draw_bbox()
+        # self.draw_landmarks()
         self.draw_axes()
         # self.draw_direction_2()
         self.draw_direction()
@@ -124,8 +124,9 @@ class Annotator():
         c = [0,0]
         lenAB = math.sqrt(math.pow(p1[0] - p2[0], 2.0) + math.pow(p1[1] - p2[1], 2.0))
         try:
-            c[0] = int (p2[0]+(p2[0] - p1[0]) / lenAB * 3)
-            c[1] = int (p2[1]+(p2[1] - p1[1]) / lenAB * 3)
+            howLong = 5 # How long did u want to be.
+            c[0] = int (p2[0]+(p2[0] - p1[0]) / lenAB * howLong)
+            c[1] = int (p2[1]+(p2[1] - p1[1]) / lenAB * howLong)
             cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
             cv2.line(self.im, p1, p2, Color.green, self.ls)
         except:

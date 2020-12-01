@@ -160,9 +160,10 @@ class HeadposeDetection():
         for key in self.history:
             res += [np.mean(self.history[key], axis=0)]
         return res
-    
+
     # return image and angles
-    def process_image(self, im, box, draw=True, ma=1):
+    def process_image(self, im, box, history, draw=True, ma=3):
+        self.history = history
         # landmark Detection
         # im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
         landmarks_2d, bbox = self.get_landmarks(im,box)
@@ -193,7 +194,7 @@ class HeadposeDetection():
             im = annotator.draw_all()
             if self.v: 
                 print(', draw: %.2f' % t.toc('draw'), end='ms' + ' ' * 10)
-        return im, angles
+        return im, angles, self.history
 
 
 def main(args):

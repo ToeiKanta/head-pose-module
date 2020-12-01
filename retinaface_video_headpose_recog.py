@@ -10,6 +10,22 @@ from face_recognition import FaceRecognition_module
 from timer import Timer
 from face_recognition import Recog_feature_extract_module
 
+# moving average history
+class History():
+    history = {'username':{'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}}
+    
+    def get_history(self,username):
+        return self.history[username]
+
+    def set_history(self,username, history):
+        self.history[username] = history
+
+    def create_history(self,username):
+        self.history[username] = {'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}
+    
+    def remove_history(self,username):
+        self.history.pop(username,None)
+        print(f"history len: {len(self.history)}")
 class Color():
     blue = (255, 0, 0)
     green = (0, 255, 0)
@@ -48,6 +64,7 @@ if __name__ == "__main__":
     filename = args["input_file"]
     scale = args["video_scale"]
     isNoTrain = args["close_recognition_training"]
+    historySave = History()
     detector = RetinaFace(gpu_id=-1)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -150,7 +167,9 @@ if __name__ == "__main__":
             else:
                 # if new pos -> find who is him?
                 boxId += 1
-                users_in_img.append(["b:"+str(boxId),box,center_point,0])
+                user_name = "b:"+str(boxId)
+                users_in_img.append([user_name,box,center_point,0]) # save new human position
+                historySave.create_history(user_name) # create new head-pose history
                 if isRecognition and (count-start_frame)%10 == 0:
                     face_recognition = FaceRecognition_module()
                     user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
@@ -160,7 +179,8 @@ if __name__ == "__main__":
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
-            img, angles = hpd.process_image(img,box)
+            img, angles, new_history = hpd.process_image(img,box,historySave.get_history(user_name),True,1)
+            historySave.set_history(user_name, new_history)
 
             # width, height = cropped.shape[:2]
             # print(f'w: {width} h: {height}')
@@ -184,20 +204,22 @@ if __name__ == "__main__":
         for users in users_in_img:
             nname,bbox,ccenter,step = users[:4]
             if step >= 3:
-                users_in_img.pop(i)
+                print(f'\npop => {users_in_img.pop(i)} name => {nname}')
+                historySave.remove_history(nname)
                 continue
             user_list += users[0] + ' '
             users_in_img[i] = [users[0],users[1],users[2],users[3]+1] # step up
             i += 1 # count index
             # Write Box's name from saving position
-            cv2.putText(img, users[0] + "(" + str(users[3]) + ")", (int(users[2][0]), int(users[2][1]) - 5), cv2.FONT_HERSHEY_COMPLEX, 0.4,(0, 255, 0), 1)
+            if step == 0:
+                cv2.putText(img, users[0] + "(" + str(users[3]) + ")", (int(users[2][0]), int(users[2][1]) - 5), cv2.FONT_HERSHEY_COMPLEX, 0.4,(0, 255, 0), 1)
         # print(f' boxs: {user_list} ')
 ######### Close Draw Position Saved #########
 
         # print(f'\rused face : {used_face}\n')    
         # print('\rframe: %d \n' % count, end='')
-        print('')
-        print('frame: %.2f' % t.toc('FF'), end='ms')
+        print(f' frame: {count} count: {count-start_frame}')
+        print(' time: %.2f ' % t.toc('FF'), end='ms')
         cv2.imshow('img', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             headpose_module.t.summary()
