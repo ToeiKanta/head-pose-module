@@ -53,6 +53,13 @@ class HeadposeDetection():
             [ 1.789930,  5.393625,  4.413414],   # 17 left eye right corner
             [-1.789930,  5.393625,  4.413414],   # 25 right eye left corner
             [-5.311432,  5.485328,  3.987654]    # 21 right eye right corner
+        ], dtype=np.double),
+        np.array([
+            [ 0.000,  0.000,   0.000],    # Nose tip
+            [-5.625,  4.250,  -3.375],    # Left eye left corner
+            [ 5.625,  4.250,  -3.375],    # Right eye right corner
+            [-3.750, -3.750,  -3.125],    # Left Mouth corner
+            [ 3.750, -3.750,  -3.125]     # Right mouth corner 
         ], dtype=np.double)
     ]
 
@@ -60,7 +67,8 @@ class HeadposeDetection():
     lm_2d_index_list = [
         [30, 8, 36, 45, 48, 54],
         [33, 17, 21, 22, 26, 36, 39, 42, 45, 31, 35, 48, 54, 57, 8], # 14 points
-        [33, 36, 39, 42, 45] # 5 points
+        [33, 36, 39, 42, 45], # 5 points
+        [30, 36, 45, 48, 54], # 5 point retina
     ]
 
     def __init__(self, lm_type=1, predictor="model/shape_predictor_68_face_landmarks.dat", verbose=False):
@@ -162,12 +170,37 @@ class HeadposeDetection():
         return res
 
     # return image and angles
-    def process_image(self, im, box, history, draw=True, ma=3):
-        self.history = history
+    def process_image(self, im, box, draw=True, ma=3, history = None, landmarks = None):
+        if history == None:
+            self.history = history
         # landmark Detection
         # im_gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
-        landmarks_2d, bbox = self.get_landmarks(im,box)
-
+        if landmarks is None:
+            landmarks_2d, bbox = self.get_landmarks(im,box)
+        else:
+            self.lm_2d_index = self.lm_2d_index_list[3]
+            self.landmarks_3d = self.landmarks_3d_list[3]
+            landmarks_2d, bbox_ = self.get_landmarks(im[:2,:2],box)
+            # landmarks_2d = [[0.,0.],[0.,0.],[0.,0.],[0.,0.],[0.,0.]]
+            
+            # print("=======\n")
+            # print(f'{landmarks_2d} {landmarks_2d_2}')
+            # print("\n=\n")
+            # print(f'{bbox_2} {box}')
+            # print("=======\n")
+            landmarks_2d[0][0] = landmarks[2][0]
+            landmarks_2d[0][1] = landmarks[2][1]
+            landmarks_2d[1][0] = landmarks[0][0]
+            landmarks_2d[1][1] = landmarks[0][1]
+            landmarks_2d[2][0] = landmarks[1][0]
+            landmarks_2d[2][1] = landmarks[1][1]
+            landmarks_2d[3][0] = landmarks[3][0]
+            landmarks_2d[3][1] = landmarks[3][1]
+            landmarks_2d[4][0] = landmarks[4][0]
+            landmarks_2d[4][1] = landmarks[4][1]
+            bbox = box
+            # input()
+        
         # if no face deteced, return original image
         if landmarks_2d is None:
             return im, None

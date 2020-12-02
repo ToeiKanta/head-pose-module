@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', metavar='FILE', dest='output_file', default='./output/Test', help='Output video.')
     parser.add_argument('-fd','--force-delete', dest='force_delete',action='store_true',help='Force delete video output if existed.')
     parser.add_argument('-wh', metavar='N', dest='wh', default=[720, 480], nargs=2, help='Frame size.')
-    parser.add_argument('-lt', metavar='N', dest='landmark_type', type=int, default=1, help='Landmark type.')
+    parser.add_argument('-lt', metavar='N', dest='landmark_type', type=int, default=3, help='Landmark type.')
     parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', default='model/shape_predictor_68_face_landmarks.dat', help="Landmark predictor data file.")
     parser.add_argument('-sf', metavar='N', dest='start_frame', type=int, default=0, help='Start frame number.')
     parser.add_argument('-fl', metavar='N', dest='frame_limit', type=int, default=-1, help='Frame limit. (Default - will play until ended)')
@@ -179,19 +179,21 @@ if __name__ == "__main__":
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
-            img, angles, new_history = hpd.process_image(img,box,historySave.get_history(user_name),True,1)
-            historySave.set_history(user_name, new_history)
+            # img, angles, new_history = hpd.process_image(img,box,True,1,historySave.get_history(user_name))
+            # historySave.set_history(user_name, new_history)
+            img, angles, new_history = hpd.process_image(img,box,True,1,None,landmarks)
+            # img, angles, new_history = hpd.process_image(img,box,True,1)
 
             # width, height = cropped.shape[:2]
             # print(f'w: {width} h: {height}')
             
             if img is None: 
                 break
-            # else:
-                #### draw retina facial landmarks #######
-                # for p in landmarks:
-                #     point = tuple(p.astype(int))
-                #     cv2.circle(img, point, 1, Color.yellow,-1)
+            else:
+                ### draw retina facial landmarks #######
+                for p in landmarks:
+                    point = tuple(p.astype(int))
+                    cv2.circle(img, point, 1, Color.yellow,-1)
             # draw head detector
             # cv2.rectangle(
             #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
