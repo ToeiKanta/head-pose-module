@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 mode/*.dat
+.idea/
 # my ignore
 Test/
 !Test/*.md

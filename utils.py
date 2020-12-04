@@ -40,7 +40,7 @@ class Annotator():
         h, w, c = im.shape
         self.fs = ((h + w) / 2) / 500
         self.ls = round(self.fs * 2)
-        self.ls = 2
+        self.ls = 1
         self.ps = self.ls
 
 
@@ -120,11 +120,16 @@ class Annotator():
         (nose_end_point2D, _) = cv2.projectPoints(np.array([(0.0, 0.0, self.b)]), self.rvec, self.tvec, self.cm, self.dc)
         p1 = self.nose
         p2 = tuple(nose_end_point2D[0, 0].astype(int))
+        # delete hard error (only line drawing)
+        if p2[0] <= 0 or p2[1] <= 0:
+            return
+        elif p2[0] >= self.im.shape[0] or p2[1] >= self.im.shape[1]:
+            return
         # extend line longer
         c = [0,0]
         lenAB = math.sqrt(math.pow(p1[0] - p2[0], 2.0) + math.pow(p1[1] - p2[1], 2.0))
         try:
-            howLong = 2 # How long did u want to be.
+            howLong = 3000 # How long did u want to be.
             c[0] = int (p2[0]+(p2[0] - p1[0]) / lenAB * howLong)
             c[1] = int (p2[1]+(p2[1] - p1[1]) / lenAB * howLong)
             cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
