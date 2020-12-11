@@ -9,6 +9,7 @@ import headpose_module
 from face_recognition import FaceRecognition_module
 from timer import Timer
 from face_recognition import Recog_feature_extract_module
+from bird_eye_view import BirdEyeModuleOnlyHead
 
 # moving average history
 class History():
@@ -54,25 +55,30 @@ if __name__ == "__main__":
     parser.add_argument('-scale', metavar='FLOAT', dest='video_scale', type=float, default=1.0, help='Video scale.')
     parser.add_argument('-nr','--no-recog',action='store_true', dest='close_recognition', help='Close Recognition mode.')
     parser.add_argument('-nt','--no-train',action='store_true', dest='close_recognition_training', help='Close Recognition Training mode.')
+    parser.add_argument('-nb','--no-bird',action='store_true', dest='close_bird_eye', help='Close BirdEye Mode.')
     args = vars(parser.parse_args())
     # Initialize head pose detection
     hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     print('close_recognition : {}'.format(args["close_recognition"]))
+    print('close_bird_eye : {}'.format(args["close_bird_eye"]))
+    closeBirdEye = args["close_bird_eye"]
     frameSkipNumber = args["frame_skip_number"]
     isRecognition = not args["close_recognition"]
     filename = args["input_file"]
     scale = args["video_scale"]
     isNoTrain = args["close_recognition_training"]
+    outputPath = args["output_file"]
     historySave = History()
     detector = RetinaFace(gpu_id=-1)
+    birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename))
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
     name, ext = osp.splitext(filename)
-    outputPath = args["output_file"]
+    
     if args["force_delete"] and osp.exists(outputPath):
         os.remove(outputPath)
     elif osp.exists(outputPath):
@@ -106,6 +112,7 @@ if __name__ == "__main__":
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
         faces = detector(img_rgb)
+        
         # print(f'find face : {len(faces)}\n')
         used_face = 0
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
