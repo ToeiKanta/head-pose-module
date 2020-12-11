@@ -56,7 +56,7 @@ class Utills:
         for i in range(len(bottom_points)):
             for j in range(len(bottom_points)):
                 if i != j:
-                    dist = cal_dis(bottom_points[i], bottom_points[j], distance_w, distance_h)
+                    dist = self.cal_dis(bottom_points[i], bottom_points[j], distance_w, distance_h)
                     #dist = int((dis*180)/distance)
                     if dist <= 150:
                         closeness = 0
@@ -74,7 +74,7 @@ class Utills:
         return distance_mat, bxs
     
     # Function gives scale for birds eye view               
-    def get_scale(W, H):
+    def get_scale(self, W, H):
         
         dis_w = 400
         dis_h = 600

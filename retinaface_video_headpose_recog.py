@@ -71,7 +71,7 @@ if __name__ == "__main__":
     outputPath = args["output_file"]
     historySave = History()
     detector = RetinaFace(gpu_id=-1)
-    birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename))
+    birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),opencv = cv2)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -115,11 +115,13 @@ if __name__ == "__main__":
         
         # print(f'find face : {len(faces)}\n')
         used_face = 0
+        boxs = []
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
             
             if score <= 0.3:
                 # print(f'\n skipped score <= 0.2 \n')
                 continue
+            boxs.append(box)
             box = box.astype(np.int)
             x = box[0]
             y = box[1]
@@ -206,7 +208,6 @@ if __name__ == "__main__":
             #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
             # )
             used_face += 1
-        
 ######### Draw Position Saved #########
         i = 0
         user_list = ''
@@ -225,6 +226,10 @@ if __name__ == "__main__":
         # print(f' boxs: {user_list} ')
 ######### Close Draw Position Saved #########
 
+######### Show Bird Eye View #########
+        birdEye.calculate_social_distancing_retina_box(boxs, img)
+######### Close Show Bird Eye View #########
+
         # print(f'\rused face : {used_face}\n')    
         # print('\rframe: %d \n' % count, end='')
         print(f' frame: {count} count: {count-start_frame}')
@@ -238,7 +243,7 @@ if __name__ == "__main__":
         # close head-pose
         if args["frame_limit"] != -1 and count - start_frame >= args["frame_limit"]:
             break
-        
+
     # When everything done, release the capture
     cap.release()
     out.release()
