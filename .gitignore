@@ -146,3 +146,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# my ignore files
+bird_eye_view/models/yolov3.weights
