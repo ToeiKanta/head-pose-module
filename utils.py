@@ -44,14 +44,14 @@ class Annotator():
         self.ps = self.ls
 
 
-    def draw_all(self):
+    def draw_all(self,howLong):
         # self.draw_bbox()
         self.draw_landmarks()
         # self.draw_axes()
         # self.draw_direction_2()
-        self.draw_direction()
+        eye_direction_point = self.draw_direction(howLong)
         # self.draw_info()
-        return self.im
+        return self.im, eye_direction_point
 
     def get_image(self):
         return self.im
@@ -116,7 +116,7 @@ class Annotator():
         cv2.line(img, (int(tdx), int(tdy)), (int(x2),int(y2)),(0,255,0),2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x3),int(y3)),(255,0,0),2)
 
-    def draw_direction(self):
+    def draw_direction(self, howLong = 100):
         (nose_end_point2D, _) = cv2.projectPoints(np.array([(0.0, 0.0, self.b)]), self.rvec, self.tvec, self.cm, self.dc)
         p1 = self.nose
         p2 = tuple(nose_end_point2D[0, 0].astype(int))
@@ -127,15 +127,44 @@ class Annotator():
         #     return
         # extend line longer
         c = [0,0]
+        temp = [0, 0] # temp is eye direction point (used in Bird Eye View)
         lenAB = math.sqrt(math.pow(p1[0] - p2[0], 2.0) + math.pow(p1[1] - p2[1], 2.0))
         try:
-            howLong = 3000 # How long did u want to be.
             c[0] = int (p2[0]+(p2[0] - p1[0]) / lenAB * howLong)
             c[1] = int (p2[1]+(p2[1] - p1[1]) / lenAB * howLong)
+            temp[0] = c[0]
+            temp[1] = c[1] + int(self.bbox[3] - p1[1])
+            # print(f"p1: {p1}")
             cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
             cv2.line(self.im, p1, p2, Color.green, self.ls)
+            return tuple(temp)
         except:
-            pass
+            temp[0] = p2[0]
+            temp[1] = p2[1] + int(self.bbox[3] - p1[1])
+            return tuple(temp)
+
+    def get_direction_point(self, howLong = 100):
+        (nose_end_point2D, _) = cv2.projectPoints(np.array([(0.0, 0.0, self.b)]), self.rvec, self.tvec, self.cm, self.dc)
+        p1 = self.nose
+        p2 = tuple(nose_end_point2D[0, 0].astype(int))
+        # delete hard error (only line drawing)
+        # if p2[0] <= 0 or p2[1] <= 0:
+        #     return
+        # elif p2[0] >= self.im.shape[0] or p2[1] >= self.im.shape[1]:
+        #     return
+        # extend line longer
+        c = [0,0]
+        temp = [0, 0]
+        temp[0] = int(p1[0])
+        temp[1] = int(p1[1] + (self.bbox[3] - p1[1]))
+        lenAB = math.sqrt(math.pow(p1[0] - p2[0], 2.0) + math.pow(p1[1] - p2[1], 2.0))
+        try:
+            c[0] = int (p2[0]+(p2[0] - p1[0]) / lenAB * howLong)
+            c[1] = int ((p2[1]+(p2[1] - p1[1]) / lenAB * howLong) + (self.bbox[3] - p1[1])) # ขยับ y จากคาง
+
+            return tuple(c)
+        except:
+            return p2
 
     def draw_direction_2(self):
         (nose_end_point2D, _) = cv2.projectPoints(np.array([(0.0, 0.0, self.b)]), self.rvec, self.tvec, self.cm, self.dc)

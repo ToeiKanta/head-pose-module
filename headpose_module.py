@@ -224,10 +224,10 @@ class HeadposeDetection():
         if draw:
             t.tic('draw')
             annotator = Annotator(im, angles, bbox, landmarks_2d, rvec, tvec, cm, dc, b=10.0)
-            im = annotator.draw_all()
+            im, direction_point = annotator.draw_all(howLong=100)
             if self.v: 
                 print(', draw: %.2f' % t.toc('draw'), end='ms' + ' ' * 10)
-        return im, angles, self.history
+        return im, angles, self.history, direction_point
 
 
 def main(args):

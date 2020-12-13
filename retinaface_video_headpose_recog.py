@@ -123,6 +123,7 @@ if __name__ == "__main__":
         # print(f'find face : {len(faces)}\n')
         used_face = 0
         boxs = []
+        direction_points = []
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
             
             if score <= 0.3:
@@ -197,7 +198,8 @@ if __name__ == "__main__":
             # Display the resulting frame
             # img, angles, new_history = hpd.process_image(img,box,True,1,historySave.get_history(user_name))
             # historySave.set_history(user_name, new_history)
-            img, angles, new_history = hpd.process_image(img,box,True,1,None,landmarks)
+            img, angles, new_history, direction_point = hpd.process_image(img,box,True,1,None,landmarks)
+            direction_points.append(direction_point)
             # img, angles, new_history = hpd.process_image(img,box,True,1)
 
             # width, height = cropped.shape[:2]
@@ -234,7 +236,7 @@ if __name__ == "__main__":
 ######### Close Draw Position Saved #########
 
 ######### Show Bird Eye View #########
-        birdEye.calculate_social_distancing_retina_box(boxs, img)
+        birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
 ######### Close Show Bird Eye View #########
 
         # print(f'\rused face : {used_face}\n')    
