@@ -89,7 +89,10 @@ if __name__ == "__main__":
             os.remove(outputPath)
         else:
             exit()
-    out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width*scale), int(height*scale)))
+    if not closeBirdEye:
+        out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width * scale)+2*int(height * scale/2), int(height * scale)))
+    else:
+        out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width*scale), int(height*scale)))
     # high performance at w: 540.0 h: 960.0
     print(f'w: {width*scale} h: {height*scale}')
 
@@ -109,6 +112,10 @@ if __name__ == "__main__":
         if img is None:
             break
         img = cv2.resize(img, (int(width*scale) , int(height*scale)))
+        # expand image horizontal for easy to setup bird view space
+        if not closeBirdEye:
+            h, w = img.shape[:2]
+            img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
         faces = detector(img_rgb)

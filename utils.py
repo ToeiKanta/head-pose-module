@@ -121,10 +121,10 @@ class Annotator():
         p1 = self.nose
         p2 = tuple(nose_end_point2D[0, 0].astype(int))
         # delete hard error (only line drawing)
-        if p2[0] <= 0 or p2[1] <= 0:
-            return
-        elif p2[0] >= self.im.shape[0] or p2[1] >= self.im.shape[1]:
-            return
+        # if p2[0] <= 0 or p2[1] <= 0:
+        #     return
+        # elif p2[0] >= self.im.shape[0] or p2[1] >= self.im.shape[1]:
+        #     return
         # extend line longer
         c = [0,0]
         lenAB = math.sqrt(math.pow(p1[0] - p2[0], 2.0) + math.pow(p1[1] - p2[1], 2.0))

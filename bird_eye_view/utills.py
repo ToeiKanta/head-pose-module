@@ -76,8 +76,8 @@ class Utills:
     # Function gives scale for birds eye view               
     def get_scale(self, W, H):
         
-        dis_w = 400
-        dis_h = 600
+        dis_w = 700
+        dis_h = 400
         
         return float(dis_w/W),float(dis_h/H)
         

@@ -167,8 +167,9 @@ class BirdEyeModuleOnlyHead:
             # which we can use to calculate distance between two humans in transformed view or bird eye view
             self.distance_w = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
             self.distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
-            pnts = np.array(points[:4], np.int32)
-            cv2.polylines(image, [pnts], True, (70, 70, 70), thickness=2)
+
+        pnts = np.array(mouse_pts[:4], np.int32)
+        cv2.polylines(image, [pnts], True, (70, 70, 70), thickness=2)
             
         # Here we will be using bottom center point of bounding box for all boxes and will transform all those
         # bottom center points to bird eye view
