@@ -19,7 +19,8 @@ class Color():
 
 
 class Annotator():
-    
+    ## rvec = rotation_vector
+    ## tvec = translation_vector
     def __init__(self, im, angles=None, bbox=None, lm=None, rvec=None, tvec=None, cm=None, dc=None, b=10.0):
         self.im = im
 
@@ -46,11 +47,12 @@ class Annotator():
 
     def draw_all(self,howLong):
         # self.draw_bbox()
-        self.draw_landmarks()
-        # self.draw_axes()
-        # self.draw_direction_2()
+        # self.draw_landmarks()
+        backBoxCenter, frontBoxCenter = self.draw_axes()
+        # self.draw_direction_axes(backBoxCenter, frontBoxCenter)
         eye_direction_point = self.draw_direction(howLong)
         # self.draw_info()
+        # self.draw_direction_2()
         return self.im, eye_direction_point
 
     def get_image(self):
@@ -80,7 +82,18 @@ class Annotator():
         for p in self.box_lines:
             p1 = tuple(pbox[p[0]].astype(int))
             p2 = tuple(pbox[p[1]].astype(int))
-            cv2.line(self.im, p1, p2, Color.blue, self.ls)
+            if (p[0], p[1]) == (0, 1) or \
+                (p[0], p[1]) == (4, 5) or \
+                    (p[0], p[1]) == (6, 7) or \
+                    (p[0], p[1]) == (2, 3):
+                cv2.line(self.im, p1, p2, Color.red, self.ls)
+            elif (p[0], p[1]) == (1, 2):
+                cv2.line(self.im, p1, p2, Color.yellow, self.ls)
+            else:
+                cv2.line(self.im, p1, p2, Color.blue, self.ls)
+        backBoxCenter = (int((pbox[1][0] + pbox[5][0])/2), int((pbox[1][1]+pbox[2][1])/2))
+        frontBoxCenter = (int((pbox[0][0] + pbox[4][0]) / 2), int((pbox[0][1] + pbox[3][1]) / 2))
+        return backBoxCenter, frontBoxCenter
 
     def draw_axis(self, tdx=None, tdy=None, size=150.):
         x1, y1, x2, y2 = np.array(self.bbox).astype(int)
@@ -116,6 +129,17 @@ class Annotator():
         cv2.line(img, (int(tdx), int(tdy)), (int(x2),int(y2)),(0,255,0),2)
         cv2.line(img, (int(tdx), int(tdy)), (int(x3),int(y3)),(255,0,0),2)
 
+    def draw_direction_axes(self, backBoxCenter , frontBoxCenter,howLong = 50):
+        c = [0, 0]
+        lenAB = math.sqrt(math.pow(backBoxCenter[0] - frontBoxCenter[0], 2.0) + math.pow(backBoxCenter[1] - frontBoxCenter[1], 2.0))
+        try:
+            c[0] = int (frontBoxCenter[0]+(frontBoxCenter[0] - backBoxCenter[0]) / lenAB * howLong)
+            c[1] = int (frontBoxCenter[1]+(frontBoxCenter[1] - backBoxCenter[1]) / lenAB * howLong)
+            cv2.line(self.im, backBoxCenter, tuple(c), Color.yellow, self.ls)
+            # cv2.line(self.im, backBoxCenter, frontBoxCenter, Color.green, self.ls*2)
+        except:
+            return
+
     def draw_direction(self, howLong = 100):
         (nose_end_point2D, _) = cv2.projectPoints(np.array([(0.0, 0.0, self.b)]), self.rvec, self.tvec, self.cm, self.dc)
         p1 = self.nose
@@ -135,8 +159,8 @@ class Annotator():
             temp[0] = c[0]
             temp[1] = c[1] + int(self.bbox[3] - p1[1])
             # print(f"p1: {p1}")
-            cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
-            cv2.line(self.im, p1, p2, Color.green, self.ls)
+            # cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
+            # cv2.line(self.im, p1, p2, Color.green, self.ls)
             return tuple(temp)
         except:
             temp[0] = p2[0]

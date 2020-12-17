@@ -131,13 +131,12 @@ class HeadposeDetection():
 
         # Find rotation, translation
         (success, rotation_vector, translation_vector) = cv2.solvePnP(self.landmarks_3d, landmarks_2d, camera_matrix, dist_coeffs)
-        
+
         if verbose:
             print("Camera Matrix:\n {0}".format(camera_matrix))
             print("Distortion Coefficients:\n {0}".format(dist_coeffs))
             print("Rotation Vector:\n {0}".format(rotation_vector))
             print("Translation Vector:\n {0}".format(translation_vector))
-
         return rotation_vector, translation_vector, camera_matrix, dist_coeffs
 
 
