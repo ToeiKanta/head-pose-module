@@ -15,7 +15,7 @@ def relative(path):
 
 
 detector = dlib.get_frontal_face_detector()
-sp = dlib.shape_predictor(relative('../facialLandmarks/shape_predictor_68_face_landmarks.dat'))
+sp = dlib.shape_predictor(relative('../FacialLandmarks/shape_predictor_68_face_landmarks.dat'))
 model = dlib.face_recognition_model_v1(relative('./dlib_face_recognition_resnet_model_v1.dat'))
 picklePath = './tempmodel/trainset.pk'
 

@@ -57,6 +57,8 @@ if __name__ == "__main__":
     parser.add_argument('-nr','--no-recog',action='store_true', dest='close_recognition', help='Close Recognition mode.')
     parser.add_argument('-nt','--no-train',action='store_true', dest='close_recognition_training', help='Close Recognition Training mode.')
     parser.add_argument('-nb','--no-bird',action='store_true', dest='close_bird_eye', help='Close BirdEye Mode.')
+    parser.add_argument('-ni','--no-img-show',action='store_true', dest='close_show_image', help='Close Image Realtime show.')    
+    parser.add_argument('-cpu','--use-cpu',action='store_true', dest='use_cpu', help='Use CPU.')        
     args = vars(parser.parse_args())
     # Initialize head pose detection
     hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
@@ -64,6 +66,7 @@ if __name__ == "__main__":
     print('close_recognition : {}'.format(args["close_recognition"]))
     print('close_bird_eye : {}'.format(args["close_bird_eye"]))
     closeBirdEye = args["close_bird_eye"]
+    closeImShow = args["close_show_image"]
     frameSkipNumber = args["frame_skip_number"]
     isRecognition = not args["close_recognition"]
     filename = args["input_file"]
@@ -71,9 +74,14 @@ if __name__ == "__main__":
     scale = args["video_scale"]
     isNoTrain = args["close_recognition_training"]
     outputPath = args["output_file"]
+    useCPU = args["use_cpu"]
     historySave = History()
-    detector = RetinaFace(gpu_id=-1)
-    birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),opencv = cv2)
+    if useCPU:
+        detector = RetinaFace(gpu_id=-1)
+    else:
+        detector = RetinaFace(gpu_id=0)
+    if not closeBirdEye:
+        birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),opencv = cv2)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -174,7 +182,8 @@ if __name__ == "__main__":
                         face_recognition = FaceRecognition_module()
                         user_name = face_recognition.detect(frame=img,box=box,landmarks=landmarks, score=score)
                     if not isNoTrain:
-                        cv2.imshow('img', cropped)
+                        if not closeImShow:
+                            cv2.imshow('img', cropped)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
                         n = input("Please enter name: ")
@@ -200,7 +209,7 @@ if __name__ == "__main__":
             # Display the resulting frame
             if use_dlip_lm:
                 # this will use buildin dlip landmarks
-                print(f"\nimgae: {user_name}\n")
+                # print(f"\nimgae: {user_name}\n")
                 img, angles, new_history, direction_point = hpd.process_image(img,box,True,1,None)
             else:
                 # this will use retina face landmarks
@@ -218,7 +227,7 @@ if __name__ == "__main__":
                 ### draw retina facial landmarks #######
                 for p in landmarks:
                     point = tuple(p.astype(int))
-                    cv2.circle(img, point, 1, Color.yellow,-1)
+                    # cv2.circle(img, point, 1, Color.yellow,-1)
             # draw head detector
             # cv2.rectangle(
             #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
@@ -243,14 +252,16 @@ if __name__ == "__main__":
 ######### Close Draw Position Saved #########
 
 ######### Show Bird Eye View #########
-        birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
+        if not closeBirdEye:
+            birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
 ######### Close Show Bird Eye View #########
 
         # print(f'\rused face : {used_face}\n')    
         # print('\rframe: %d \n' % count, end='')
         print(f' frame: {count} count: {count-start_frame}')
         print(' time: %.2f ' % t.toc('FF'), end='ms')
-        cv2.imshow('img', img)
+        if not closeImShow:
+            cv2.imshow('img', img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             headpose_module.t.summary()
             break

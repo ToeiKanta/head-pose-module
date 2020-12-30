@@ -47,9 +47,10 @@ class Annotator():
 
     def draw_all(self,howLong):
         # self.draw_bbox()
-        # self.draw_landmarks()
+        self.draw_landmarks()
         backBoxCenter, frontBoxCenter = self.draw_axes()
-        # self.draw_direction_axes(backBoxCenter, frontBoxCenter)
+        # self.draw_direction_axes(backBoxCenter, frontBoxCenter, 2000)
+        # self.draw_direction_axes(frontBoxCenter, backBoxCenter, 0)
         eye_direction_point = self.draw_direction(howLong)
         # self.draw_info()
         # self.draw_direction_2()
@@ -91,8 +92,8 @@ class Annotator():
                 cv2.line(self.im, p1, p2, Color.yellow, self.ls)
             else:
                 cv2.line(self.im, p1, p2, Color.blue, self.ls)
-        backBoxCenter = (int((pbox[1][0] + pbox[5][0])/2), int((pbox[1][1]+pbox[2][1])/2))
-        frontBoxCenter = (int((pbox[0][0] + pbox[4][0]) / 2), int((pbox[0][1] + pbox[3][1]) / 2))
+        backBoxCenter = (int((pbox[1][0] + pbox[5][0] + pbox[2][0] + pbox[6][0])/4), int((pbox[1][1]+pbox[2][1]+pbox[5][1]+pbox[6][1])/4))
+        frontBoxCenter = (int((pbox[0][0] + pbox[4][0] + pbox[3][0] + pbox[7][0]) / 4), int((pbox[0][1] + pbox[3][1] + pbox[4][1] + pbox[7][1]) / 4))
         return backBoxCenter, frontBoxCenter
 
     def draw_axis(self, tdx=None, tdy=None, size=150.):
@@ -159,8 +160,8 @@ class Annotator():
             temp[0] = c[0]
             temp[1] = c[1] + int(self.bbox[3] - p1[1])
             # print(f"p1: {p1}")
-            # cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
-            # cv2.line(self.im, p1, p2, Color.green, self.ls)
+            cv2.line(self.im, p1, tuple(c), Color.yellow, self.ls)
+            cv2.line(self.im, p1, p2, Color.green, self.ls)
             return tuple(temp)
         except:
             temp[0] = p2[0]

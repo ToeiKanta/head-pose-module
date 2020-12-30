@@ -54,7 +54,7 @@ class HeadposeDetection():
             [-1.789930,  5.393625,  4.413414],   # 25 right eye left corner
             [-5.311432,  5.485328,  3.987654]    # 21 right eye right corner
         ], dtype=np.double),
-        np.array([
+        np.array([ # 5 point retina
             [ 0.000,  0.000,   0.000],    # Nose tip
             [-4.800,  4.250,  -3.375],    # Left eye left corner [-5.625,  4.250,  -3.375]
             [ 4.800,  4.250,  -3.375],    # Right eye right corner [ 5.625,  4.250,  -3.375]
@@ -223,7 +223,7 @@ class HeadposeDetection():
         if draw:
             t.tic('draw')
             annotator = Annotator(im, angles, bbox, landmarks_2d, rvec, tvec, cm, dc, b=10.0)
-            im, direction_point = annotator.draw_all(howLong=100)
+            im, direction_point = annotator.draw_all(howLong=300)
             if self.v: 
                 print(', draw: %.2f' % t.toc('draw'), end='ms' + ' ' * 10)
         return im, angles, self.history, direction_point
