@@ -22,7 +22,7 @@ class Plot:
     # Red: High Risk
     # Yellow: Low Risk
     # Green: No Risk
-    def bird_eye_view(self, frame, distances_mat, bottom_points, scale_w, scale_h, risk_count):
+    def bird_eye_view(self, frame, distances_mat, bottom_points, scale_w, scale_h, risk_count, eye_points):
         h = frame.shape[0]
         w = frame.shape[1]
 
@@ -64,7 +64,10 @@ class Plot:
                     g.append(distances_mat[i][0])
                 if (distances_mat[i][1] not in r) and (distances_mat[i][1] not in g) and (distances_mat[i][1] not in y):
                     g.append(distances_mat[i][1])
-        
+
+        # Draw eye point line
+        for count in range(0, len(eye_points)):
+            blank_image = cv2.line(blank_image, tuple((int(eye_points[count][0] * scale_w), int(eye_points[count][1] * scale_h))),tuple((int(bottom_points[count][0] * scale_w), int(bottom_points[count][1] * scale_h))), [0,0,0], 3)
         for i in bottom_points:
             blank_image = cv2.circle(blank_image, (int(i[0]  * scale_w), int(i[1] * scale_h)), 5, green, 10)
         for i in y:

@@ -119,7 +119,7 @@ class BirdEyeModuleOnlyHead:
             #print("Point detected")
             #print(mouse_pts)
             
-    def calculate_social_distancing_retina_box(self, boxes, img):
+    def calculate_social_distancing_retina_box(self, boxes, img, direction_points):
         # Set scale for birds eye view
         # Bird's eye view will only show ROI
         global image
@@ -178,7 +178,8 @@ class BirdEyeModuleOnlyHead:
         for box in boxes:
             boxes1.append([int(box[0]), int(box[1]), int(box[2]-box[0]), int(box[3]-box[1])])
         person_points = utills.get_transformed_points(boxes1, self.prespective_transform)
-        
+        eye_points = utills.get_transformed_eye_direct_point(direction_points, self.prespective_transform)
+
         # Here we will calculate distance between transformed points(humans)
         distances_mat, bxs_mat = utills.get_distances(boxes1, person_points, self.distance_w, self.distance_h)
         risk_count = utills.get_count(distances_mat)
@@ -186,7 +187,7 @@ class BirdEyeModuleOnlyHead:
         frame1 = np.copy(image)
         
         # Draw bird eye view and frame with bouding boxes around humans according to risk factor    
-        bird_image = plot.bird_eye_view(image, distances_mat, person_points, scale_w, scale_h, risk_count)
+        bird_image = plot.bird_eye_view(image, distances_mat, person_points, scale_w, scale_h, risk_count, eye_points)
         img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
         
         # Show/write image and videos
