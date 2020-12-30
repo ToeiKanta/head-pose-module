@@ -12,8 +12,8 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torch.nn.functional as F
 from PIL import Image
-
-import hopenet, utils
+from .hopenet import Hopenet
+from .utils_class import Utils
 
 def get_project_dir():
     current_path = os.path.abspath(os.path.join(__file__, "../"))
@@ -27,13 +27,13 @@ class DeepHeadposeModule:
 
     def __init__(
         self,
-        gpu=1,
+        gpu=0,
         snapshot_path = relative('files/hopenet_robust_alpha1.pkl'),
     ):
         cudnn.enabled = True
-        self.gpu = 1
+        self.gpu = gpu
         # ResNet50 structure
-        self.model = hopenet.Hopenet(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
+        self.model = Hopenet(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
         print('Loading snapshot.')
         # Load snapshot
         saved_state_dict = torch.load(snapshot_path)
@@ -46,7 +46,7 @@ class DeepHeadposeModule:
         print('Ready to test network.')
         # Test the Model
         self.model.eval()  # Change model to 'eval' mode (BN uses moving mean/var).
-
+        self.utils = Utils()
         self.idx_tensor = [idx for idx in range(66)]
         self.idx_tensor = torch.FloatTensor(self.idx_tensor).cuda(gpu)
 
@@ -73,7 +73,7 @@ class DeepHeadposeModule:
         img = self.transformations(img)
         img_shape = img.size()
         img = img.view(1, img_shape[0], img_shape[1], img_shape[2])
-        img = Variable(img).cuda(gpu)
+        img = Variable(img).cuda(self.gpu)
 
         yaw, pitch, roll = self.model(img)
 
@@ -86,7 +86,7 @@ class DeepHeadposeModule:
         roll_predicted = torch.sum(roll_predicted.data[0] * self.idx_tensor) * 3 - 99
 
         # utils.plot_pose_cube(frame, yaw_predicted, pitch_predicted, roll_predicted, (x_min + x_max) / 2, (y_min + y_max) / 2, size = bbox_width)
-        utils.draw_axis(frame, yaw_predicted, pitch_predicted, roll_predicted, tdx = (x_min + x_max) / 2, tdy= (y_min + y_max) / 2, size = bbox_height/2)
+        self.utils.draw_axis(img = frame, yaw = yaw_predicted, pitch = pitch_predicted, roll = roll_predicted, tdx = (x_min + x_max) / 2, tdy= (y_min + y_max) / 2, size = bbox_height/2)
         # Plot expanded bounding box
         # cv2.rectangle(frame, (int(x_min), int(y_min)), (int(x_max), int(y_max)), (0,255,0), 1)
         return yaw_predicted,pitch_predicted,roll_predicted, frame
