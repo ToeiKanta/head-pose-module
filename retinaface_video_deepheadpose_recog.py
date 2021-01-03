@@ -27,7 +27,7 @@ class History():
     
     def remove_history(self,username):
         self.history.pop(username,None)
-        print(f"history len: {len(self.history)}")
+        # print(f"history len: {len(self.history)}")
 class Color():
     blue = (255, 0, 0)
     green = (0, 255, 0)
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     if not closeBirdEye:
         v_w = int(width * scale)+2*int(height * scale/2)
         v_h = int(height * scale)
-        bird_w = 300
+        bird_w = 800
         birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h)
         ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
         out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
@@ -139,6 +139,7 @@ if __name__ == "__main__":
         # print(f'find face : {len(faces)}\n')
         used_face = 0
         boxs = []
+        rotations = []
         direction_points = []
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
             
@@ -213,12 +214,12 @@ if __name__ == "__main__":
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
+            yaw,pitch,roll = (0,0,0) ## for test on cpu, we will mockup data rotation
             if not useCPU:
                 yaw,pitch,roll,new_img = deepHeadPose.getPose(frame=img,box=box)
                 img = new_img
             if not closeBirdEye:
-                # direction_points.append(direction_point);
-                pass;
+                rotations.append((yaw,pitch - 80,roll));
             # img, angles, new_history = hpd.process_image(img,box,True,1)
 
             # width, height = cropped.shape[:2]
@@ -257,7 +258,7 @@ if __name__ == "__main__":
 ######### Show Bird Eye View #########
         if not closeBirdEye:
             ## birdEyeImg = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
-            birdEyeImg = birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
+            birdEyeImg = birdEye.calculate_social_distancing_retina_box(boxs, img, rotations)
             # pad = np.full((img.shape[0],700,3), [255, 255, 255], dtype=np.uint8)
             #cv2.putText(pad, "-- HIGH RISK : " + str(risk_count[0]) + " people", (50, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
             #cv2.putText(pad, "-- LOW RISK : " + str(risk_count[1]) + " people", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
