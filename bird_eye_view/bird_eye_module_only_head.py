@@ -28,19 +28,31 @@ import argparse
 # own modules
 from .utills import Utills
 from .plot import Plot
-
+import pickle
+import os
 confid = 0.5
 thresh = 0.5
 mouse_pts = []
 points = []
 
+
+def get_project_dir():
+    current_path = os.path.abspath(os.path.join(__file__, "../"))
+    return current_path
+
+def relative(path):
+    path = os.path.join(get_project_dir(), path)
+    return os.path.abspath(path)
+
 class BirdEyeModuleOnlyHead:
-    def __init__(self, video_path, output_dir, output_vid, opencv):
+    def __init__(self, video_path, output_dir, output_vid, opencv, scale, closeImShow, bird_width, bird_height):
         # global cv2
         global utills
         global plot
+        self.closeImShow = closeImShow
         plot = Plot()
-        utills = Utills()
+        utills = Utills(bird_width, bird_height)
+        self.savePath = relative('save_files/' + os.path.basename(video_path) + '-' + str(scale) + '.pk')
         # cv2 = opencv
 
         # Receives arguements specified by user
@@ -73,7 +85,17 @@ class BirdEyeModuleOnlyHead:
         if output_vid[len(output_vid) - 1] != '/':
             self.output_vid = output_vid + '/'
 
-        self.firstSetup = True
+        if os.path.exists(self.savePath):
+            global mouse_pts;
+            mouse_pts = pickle.load(open(self.savePath, 'rb'))
+            self.firstSetup = False
+        else:
+            self.firstSetup = True
+            print("First Setup Bird View.")
+            # set mouse callback 
+            cv2.namedWindow("imageBird")
+            cv2.setMouseCallback("imageBird", self.get_mouse_points)
+            np.random.seed(42)
         # load Yolov3 weights
         
         # weightsPath = model_path + "yolov3.weights"
@@ -83,11 +105,6 @@ class BirdEyeModuleOnlyHead:
         # ln = net_yl.getLayerNames()
         # ln1 = [ln[i[0] - 1] for i in net_yl.getUnconnectedOutLayers()]
 
-        # set mouse callback 
-
-        cv2.namedWindow("imageBird")
-        cv2.setMouseCallback("imageBird", self.get_mouse_points)
-        np.random.seed(42)
         
         # self.calculate_social_distancing(net_yl, ln1)
     # Function to get points for Region of Interest(ROI) and distance scale. It will take 8 points on first frame using mouse click    
@@ -100,8 +117,8 @@ class BirdEyeModuleOnlyHead:
     # Function will be called on mouse events                                                          
 
     def get_mouse_points(self, event, x, y, flags, param):
-
         global mouse_pts
+        
         if event == cv2.EVENT_LBUTTONDOWN:
             if len(mouse_pts) < 4:
                 cv2.circle(image, (x, y), 5, (0, 0, 255), 10)
@@ -145,28 +162,32 @@ class BirdEyeModuleOnlyHead:
                 if len(mouse_pts) == 8:
                     cv2.destroyWindow("imageBird")
                     self.firstSetup = False
+                    # if not os.path.exists(self.savePath):
+                    #     with open(self.savePath, 'w'): 
+                    #         pass;
+                    pickle.dump(mouse_pts, open(self.savePath, 'wb'))
                     break
-            points = mouse_pts
+        points = mouse_pts
 
-            # Using first 4 points or coordinates for perspective transformation. The region marked by these 4 points are
-            # considered ROI. This polygon shaped ROI is then warped into a rectangle which becomes the bird eye view.
-            # This bird eye view then has the property property that points are distributed uniformally horizontally and
-            # vertically(scale for horizontal and vertical direction will be different). So for bird eye view points are
-            # equally distributed, which was not case for normal view.
-            src = np.float32(np.array(points[:4]))
-            dst = np.float32([[0, H], [W, H], [W, 0], [0, 0]])
-            self.prespective_transform = cv2.getPerspectiveTransform(src, dst)
+        # Using first 4 points or coordinates for perspective transformation. The region marked by these 4 points are
+        # considered ROI. This polygon shaped ROI is then warped into a rectangle which becomes the bird eye view.
+        # This bird eye view then has the property property that points are distributed uniformally horizontally and
+        # vertically(scale for horizontal and vertical direction will be different). So for bird eye view points are
+        # equally distributed, which was not case for normal view.
+        src = np.float32(np.array(points[:4]))
+        dst = np.float32([[0, H], [W, H], [W, 0], [0, 0]])
+        self.prespective_transform = cv2.getPerspectiveTransform(src, dst)
 
-            # using next 3 points for horizontal and vertical unit length(in this case 180 cm)
-            pts = np.float32(np.array([points[4:7]]))
-            warped_pt = cv2.perspectiveTransform(pts, self.prespective_transform)[0]
+        # using next 3 points for horizontal and vertical unit length(in this case 180 cm)
+        pts = np.float32(np.array([points[4:7]]))
+        warped_pt = cv2.perspectiveTransform(pts, self.prespective_transform)[0]
 
-            # since bird eye view has property that all points are equidistant in horizontal and vertical direction.
-            # distance_w and distance_h will give us 180 cm distance in both horizontal and vertical directions
-            # (how many pixels will be there in 180cm length in horizontal and vertical direction of birds eye view),
-            # which we can use to calculate distance between two humans in transformed view or bird eye view
-            self.distance_w = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
-            self.distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
+        # since bird eye view has property that all points are equidistant in horizontal and vertical direction.
+        # distance_w and distance_h will give us 180 cm distance in both horizontal and vertical directions
+        # (how many pixels will be there in 180cm length in horizontal and vertical direction of birds eye view),
+        # which we can use to calculate distance between two humans in transformed view or bird eye view
+        self.distance_w = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
+        self.distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
 
         pnts = np.array(mouse_pts[:4], np.int32)
         cv2.polylines(image, [pnts], True, (70, 70, 70), thickness=2)
@@ -196,21 +217,17 @@ class BirdEyeModuleOnlyHead:
             # numpy_horizontal = np.hstack((bird_image, img))
             # numpy_horizontal_concat = np.concatenate((bird_image, img), axis=1)
             # bird_movie.write(bird_image)
-
-            cv2.imshow('Bird Eye View', bird_image)
-            cv2.waitKey(1)
-            cv2.imshow('Origin', img)
-            cv2.waitKey(1)
+            if not self.closeImShow:
+                cv2.imshow('Bird Eye View', bird_image)
+                cv2.waitKey(1)
+                cv2.imshow('Origin', img)
+                cv2.waitKey(1)
             # cv2.imwrite(output_dir+"frame%d.jpg" % count, img)
             # cv2.imwrite(output_dir+"bird_eye_view/frame%d.jpg" % count, bird_image)
         # cv2.destroyAllWindows()
-
-
-
-
+        return bird_image
 
     def calculate_social_distancing(self, net, ln1):
-        
         vid_path = self.vid_path
         output_dir = self.output_dir
         output_vid = self.output_vid
@@ -343,7 +360,6 @@ class BirdEyeModuleOnlyHead:
                 # numpy_horizontal = np.hstack((bird_image, img))
                 # numpy_horizontal_concat = np.concatenate((bird_image, img), axis=1)
                 bird_movie.write(bird_image)
-        
                 cv2.imshow('Bird Eye View', bird_image)
                 cv2.imshow('Origin', img)
                 cv2.imwrite(output_dir+"frame%d.jpg" % count, img)

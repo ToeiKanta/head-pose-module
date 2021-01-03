@@ -61,8 +61,6 @@ if __name__ == "__main__":
     parser.add_argument('-ni','--no-img-show',action='store_true', dest='close_show_image', help='Close Image Realtime show.')    
     parser.add_argument('-cpu','--use-cpu',action='store_true', dest='use_cpu', help='Use CPU.')        
     args = vars(parser.parse_args())
-    # Initialize head pose detection
-    deepHeadPose = DeepHeadposeModule()
     # hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     print('close_recognition : {}'.format(args["close_recognition"]))
@@ -77,13 +75,14 @@ if __name__ == "__main__":
     isNoTrain = args["close_recognition_training"]
     outputPath = args["output_file"]
     useCPU = args["use_cpu"]
+    if not useCPU:
+        # Initialize head pose detection
+        deepHeadPose = DeepHeadposeModule()
     historySave = History()
     if useCPU:
         detector = RetinaFace(gpu_id=-1)
     else:
         detector = RetinaFace(gpu_id=0)
-    if not closeBirdEye:
-        birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),opencv = cv2)
     cap = cv2.VideoCapture(filename)
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -102,7 +101,12 @@ if __name__ == "__main__":
         else:
             exit()
     if not closeBirdEye:
-        out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width * scale)+2*int(height * scale/2), int(height * scale)))
+        v_w = int(width * scale)+2*int(height * scale/2)
+        v_h = int(height * scale)
+        bird_w = 300
+        birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h)
+        ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
+        out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
     else:
         out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width*scale), int(height*scale)))
     # high performance at w: 540.0 h: 960.0
@@ -209,8 +213,9 @@ if __name__ == "__main__":
             # print(f'\nuser: {user_name}')
             # print('REC: %.2f' % t.toc('REC'), end='ms')
             # Display the resulting frame
-            yaw,pitch,roll,new_img = deepHeadPose.getPose(frame=img,box=box)
-            img = new_img
+            if not useCPU:
+                yaw,pitch,roll,new_img = deepHeadPose.getPose(frame=img,box=box)
+                img = new_img
             if not closeBirdEye:
                 # direction_points.append(direction_point);
                 pass;
@@ -251,7 +256,14 @@ if __name__ == "__main__":
 
 ######### Show Bird Eye View #########
         if not closeBirdEye:
-            birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
+            ## birdEyeImg = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
+            birdEyeImg = birdEye.calculate_social_distancing_retina_box(boxs, img, direction_points)
+            # pad = np.full((img.shape[0],700,3), [255, 255, 255], dtype=np.uint8)
+            #cv2.putText(pad, "-- HIGH RISK : " + str(risk_count[0]) + " people", (50, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            #cv2.putText(pad, "-- LOW RISK : " + str(risk_count[1]) + " people", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
+            #cv2.putText(pad, "-- SAFE : " + str(risk_count[2]) + " people", (50,  80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            img = np.hstack((birdEyeImg, img))
+            # cv2.imshow('img', img)
 ######### Close Show Bird Eye View #########
 
         # print(f'\rused face : {used_face}\n')    

@@ -19,6 +19,12 @@ __python_version__  = "3.5.2"
 import cv2
 import numpy as np
 class Utills:
+    def __init__(self,bird_width, bird_height):
+        global bird_w
+        bird_w = bird_width
+        global bird_h
+        bird_h = bird_height
+
     # Function to calculate bottom center for all bounding boxes and transform prespective for all points.
     def get_transformed_points(self, boxes, prespective_transform):
         
@@ -86,11 +92,9 @@ class Utills:
     
     # Function gives scale for birds eye view               
     def get_scale(self, W, H):
-        
-        dis_w = 700
-        dis_h = 400
-        
-        return float(dis_w/W),float(dis_h/H)
+        # dis_w = 700
+        # dis_h = 400
+        return float(bird_w/W),float(bird_h/H)
         
     # Function gives count for humans at high risk, low risk and no risk    
     def get_count(self, distances_mat):
