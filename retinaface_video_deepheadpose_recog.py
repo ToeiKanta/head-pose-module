@@ -1,3 +1,4 @@
+import json
 
 import cv2
 import numpy as np
@@ -120,6 +121,7 @@ if __name__ == "__main__":
     start_frame = args["start_frame"]
     count = start_frame
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
+    saveEyePoints = []
     while (cap.isOpened()):
         t.tic('FF')
         ret, img = cap.read()
@@ -265,7 +267,9 @@ if __name__ == "__main__":
 ######### Show Bird Eye View #########
         if not closeBirdEye:
             ## birdEyeImg = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
-            birdEyeImg = birdEye.calculate_social_distancing_retina_box(boxs, img, rotations)
+            birdEyeImg, eyePoints = birdEye.calculate_social_distancing_retina_box(boxs, img, rotations)
+            saveEyePoints.append(eyePoints)
+
             # pad = np.full((img.shape[0],700,3), [255, 255, 255], dtype=np.uint8)
             #cv2.putText(pad, "-- HIGH RISK : " + str(risk_count[0]) + " people", (50, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
             #cv2.putText(pad, "-- LOW RISK : " + str(risk_count[1]) + " people", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
@@ -289,6 +293,8 @@ if __name__ == "__main__":
         if args["frame_limit"] != -1 and count - start_frame >= args["frame_limit"]:
             break
 
+    with open(outputPath + ".json", "w") as savefile:
+        json.dump(saveEyePoints, savefile)
     # When everything done, release the capture
     cap.release()
     out.release()

@@ -21,6 +21,9 @@ __date__            = "2020/05/29"
 __python_version__  = "3.5.2"
 
 # imports
+import codecs
+import json
+
 import cv2
 import numpy as np
 import time
@@ -241,7 +244,7 @@ class BirdEyeModuleOnlyHead:
         frame1 = np.copy(image)
         
         # Draw bird eye view and frame with bouding boxes around humans according to risk factor
-
+        plot = Plot()
         bird_image = plot.bird_eye_view(image, distances_mat, person_points, scale_w, scale_h, risk_count, eye_points, rotations)
         # img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
         
@@ -260,7 +263,7 @@ class BirdEyeModuleOnlyHead:
             # cv2.imwrite(output_dir+"bird_eye_view/frame%d.jpg" % count, bird_image)
         # cv2.destroyAllWindows()
         
-        return bird_image
+        return bird_image, plot.getEyePoints()
 
     # def calculate_social_distancing(self, net, ln1):
     #     vid_path = self.vid_path

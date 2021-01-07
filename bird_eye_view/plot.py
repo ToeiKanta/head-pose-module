@@ -28,7 +28,8 @@ class Plot:
     def bird_eye_view(self, frame, distances_mat, bottom_points, scale_w, scale_h, risk_count, eye_points, rotations):
         h = frame.shape[0]
         w = frame.shape[1]
-
+        global saveEyePoints
+        saveEyePoints = []
         red = (0, 0, 255)
         green = (0, 255, 0)
         yellow = (0, 255, 255)
@@ -177,18 +178,21 @@ class Plot:
         headDirection = self.getHeadPoseRayDirection(rotation, bottom_point, plane_height)
         # print(headDirection)
         cv2.circle(img, (int(headDirection[0]), int(headDirection[1])), 1, (0,0,0), 1)
+        # floor check collision
         eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x)
-        if (eyePoint[1] < 0 or eyePoint[1] > bottom_y) and (eyePoint[0]>0 and eyePoint[0]<right_x):
+        #if (eyePoint[1] < 0 or eyePoint[1] > bottom_y) and (eyePoint[0]>0 and eyePoint[0]<right_x): # old
+        if eyePoint[1]< 0 or eyePoint[1]> bottom_y:
             eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'front')
-        elif eyePoint[0] < 0:
+        # เกินขอบ front
+        if eyePoint[0]< 0:
             eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'left')
-        elif eyePoint[0] > right_x:
+        elif eyePoint[0]> right_x:
             eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'right')
 
         #### ถ้าเป็นมุมป้าน
         if eyePoint[1] <= headPoint[1]:
             eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'front')
-            if eyePoint[0]<0:
+            if eyePoint[0] < 0:
                 eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'left')
             elif eyePoint[0] > right_x:
                 eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'right')
@@ -198,8 +202,12 @@ class Plot:
         else:
             cv2.circle(img, (int(eyePoint[0]),int(eyePoint[1])), 2, red, 10)
         cv2.line(img, tuple(bottom_point), (int(eyePoint[0]), int(eyePoint[1])), (0,0,0))
-        # cv2.putText(img, str(pitch), (int(eyePoint[0]),int(eyePoint[1]-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        # cv2.putText(img, str(pitch), (int(eyePoint[0]),int(y-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        saveEyePoints.append(eyePoint.tolist())
         return img
+
+    def getEyePoints(self):
+        return saveEyePoints
 
     ## draw x y z
     def draw_axis(self, img, rotation, tdx=None, tdy=None, size = 100):
