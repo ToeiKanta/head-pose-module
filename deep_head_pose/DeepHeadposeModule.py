@@ -14,6 +14,7 @@ import torch.nn.functional as F
 from PIL import Image
 from .hopenet import Hopenet
 from .utils_class import Utils
+import math
 
 def get_project_dir():
     current_path = os.path.abspath(os.path.join(__file__, "../"))

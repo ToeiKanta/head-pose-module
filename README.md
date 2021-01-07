@@ -5,6 +5,9 @@
 * https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python
 * https://github.com/lincolnhard/head-pose-estimation
 
+### Venv
+* https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/26/python-virtual-env/
+
 ### Main file 
 * retinaface_video_headpose_recog.py
 * headpose_module.py
