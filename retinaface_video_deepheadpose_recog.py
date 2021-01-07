@@ -51,6 +51,9 @@ if __name__ == "__main__":
     parser.add_argument('-dlip','--use-dlip-lm',action='store_true', dest='use_dlip_lm', help='using dlip landmark.')
     parser.add_argument('-lp', metavar='FILE', dest='landmark_predictor', default='model/shape_predictor_68_face_landmarks.dat', help="Landmark predictor data file.")
     parser.add_argument('-sf', metavar='N', dest='start_frame', type=int, default=0, help='Start frame number.')
+    parser.add_argument('-y','--yaw', metavar='N', dest='yaw', type=int, default=0, help='set yaw.')
+    parser.add_argument('-p','--pitch', metavar='N', dest='pitch', type=int, default=0, help='set pitch.')
+    parser.add_argument('-r','--roll', metavar='N', dest='roll', type=int, default=0, help='set raw.')
     parser.add_argument('-fl', metavar='N', dest='frame_limit', type=int, default=-1, help='Frame limit. (Default - will play until ended)')
     parser.add_argument('-fs','--frame-skip', metavar='N', dest='frame_skip_number', type=int, default=1, help='Frame skip number. (Default - 1)')
     parser.add_argument('-flip', action='store_true', dest='flip_video', help='Flip video.')
@@ -105,6 +108,7 @@ if __name__ == "__main__":
         v_h = int(height * scale)
         bird_w = 800
         birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h)
+        print('\ncalcurate YAW added : '+ str(birdEye.getYawAdded()))
         ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
         out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
     else:
@@ -218,8 +222,11 @@ if __name__ == "__main__":
             if not useCPU:
                 yaw,pitch,roll,new_img = deepHeadPose.getPose(frame=img,box=box)
                 img = new_img
-            if not closeBirdEye:
-                rotations.append((yaw,pitch - 80,roll));
+                if not closeBirdEye:
+                    rotations.append((yaw + birdEye.getYawAdded() ,pitch + args["pitch"],roll + args["roll"]));
+            else:
+                #### if using CPU
+                rotations.append((12.3872, -108.2779, 6.8547));
             # img, angles, new_history = hpd.process_image(img,box,True,1)
 
             # width, height = cropped.shape[:2]

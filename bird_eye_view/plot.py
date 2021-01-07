@@ -17,8 +17,9 @@ __python_version__  = "3.5.2"
 # imports
 import cv2
 import numpy as np
-import math
 from math import cos, sin
+import math
+
 class Plot:
     # Function to draw Bird Eye View for region of interest(ROI). Red, Yellow, Green points represents risk to human. 
     # Red: High Risk
@@ -74,8 +75,10 @@ class Plot:
         for i in bottom_points:
             blank_image = cv2.circle(blank_image, (int(i[0]  * scale_w), int(i[1] * scale_h)), 5, yellow, 10)
             self.draw_axis(blank_image, rotations[count], tdx = int(i[0]  * scale_w), tdy = int(i[1] * scale_h), size = 30)
+            self.draw_eye_direction(blank_image, rotations[count],[int(i[0]  * scale_w),int(i[1] * scale_h)], 5, int(h * scale_h), int(w * scale_w))
             count += 1
-            
+
+
         # for i in y:
         #     blank_image = cv2.circle(blank_image, (int(i[0]  * scale_w), int(i[1] * scale_h)), 5, yellow, 10)
         # for i in r:
@@ -88,7 +91,74 @@ class Plot:
         #blank_image = np.vstack((blank_image,pad))   
             
         return blank_image
-        
+
+    def getIntersec(self, rayPoint, rayDirection, bottom_y, right_x, epsilon=1e-6):
+        # Define plane
+        temp = 'floor'
+        planeNormal = np.array([0, 0, 1])
+        planePoint = np.array([0, 0, 0])  # Any point on the plane planePoint(planeNormal)
+
+        # Define ray
+        # rayDirection = np.array([0, 0.5, -0.5])
+        # rayPoint = np.array([0, 0, 1]) #Any point along the ray rayPoint(rayDirection)
+
+        #### line-plane collision
+        ndotu = planeNormal.dot(rayDirection)
+        if abs(ndotu) < epsilon:
+            #### create front room wall
+            planeNormal = np.array([0, 1, 0])
+            planePoint = np.array([0, bottom_y, 0])  # Any point on the plane planePoint(planeNormal)
+            ndotu = planeNormal.dot(rayDirection)
+            temp = 'front'
+            # raise RuntimeError("no intersection or line is within plane")
+            if abs(ndotu) < epsilon:
+                #### create right room wall
+                planeNormal = np.array([-1, 0, 0])
+                planePoint = np.array([right_x, 0, 0])  # Any point on the plane planePoint(planeNormal)
+                ndotu = planeNormal.dot(rayDirection)
+                temp = 'right'
+                if abs(ndotu) < epsilon:
+                    #### create left room wall
+                    planeNormal = np.array([1, 0, 0])
+                    planePoint = np.array([0, 0, 0])  # Any point on the plane planePoint(planeNormal)
+                    ndotu = planeNormal.dot(rayDirection)
+                    temp = 'left'
+                    if abs(ndotu) < epsilon:
+                        raise RuntimeError("no intersection or line is within plane")
+        print(temp)
+        w = rayPoint - planePoint
+        si = -planeNormal.dot(w) / ndotu
+        Psi = w + si * rayDirection + planePoint
+        return Psi
+
+    def getHeadPoseRayDirection(self, rotation, bottom_point, plane_height):
+        # print(rotation)
+        yaw, pitch, roll = rotation
+        yaw = math.radians(yaw)
+        pitch = math.radians(pitch)
+        roll = math.radians(roll)
+        #### x axis
+        # x = cos(yaw) * cos(pitch)
+        # y = sin(yaw) * cos(pitch)
+        # z = sin(pitch)
+        #### y axis
+        x = -cos(yaw) * sin(pitch) * sin(roll) - sin(yaw) * cos(roll)
+        y = -sin(yaw) * sin(pitch) * sin(roll) + cos(yaw) * cos(roll)
+        z = cos(pitch) * sin(roll)
+        # print([x,y,z])
+        return np.array([x, y, z])
+
+    def draw_eye_direction(self, img, rotation, bottom_point, plane_height, bottom_y, right_x):
+        red = (0, 0, 255)
+        headPoint = [bottom_point[0],bottom_point[1],plane_height]
+        headDirection = self.getHeadPoseRayDirection(rotation, bottom_point, plane_height)
+        # print(headDirection)
+        cv2.circle(img, (int(headDirection[0]), int(headDirection[1])), 1, (0,0,0), 1)
+        eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x)
+        # print(eyePoint)
+        cv2.circle(img, (int(np.clip(eyePoint[0],0,right_x)),int(np.clip(eyePoint[1],0,bottom_y))), 2, red, 10)
+        return img
+
     ## draw x y z
     def draw_axis(self, img, rotation, tdx=None, tdy=None, size = 100):
 
@@ -129,7 +199,7 @@ class Plot:
         cv2.line(img, (int(tdx), int(tdy)), (int(x3),int(y3)), blue, 2)
 
         return img
-        
+
     # Function to draw bounding boxes according to risk factor for humans in a frame and draw lines between
     # boxes according to risk factor between two humans.
     # Red: High Risk

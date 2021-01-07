@@ -38,16 +38,16 @@ class Utills:
             
         return bottom_points
 
-    def get_transformed_eye_direct_point(self, direction_points, prespective_transform):
-
+    def get_transformed_eye_direct_point(self, bottom_points, prespective_transform, plane_height, distance_w):
         eye_points = []
-        for point in direction_points:
-            pnts = np.array([[[point[0], point[1]]]], dtype="float32")
-            # pnts = np.array([[[int(box[0]+(box[2]*0.5)),int(box[1]+(box[3]*0.5))]]] , dtype="float32")
-            bd_pnt = cv2.perspectiveTransform(pnts, prespective_transform)[0][0]
-            pnt = [int(bd_pnt[0]), int(bd_pnt[1])]
-            eye_points.append(pnt)
-
+        # for point in bottom_points:
+        #     self.([point[0], point[1], plane_height])
+        #     self.getHeadPoseRayDirection([])
+        #     pnts = np.array([[[point[0], point[1]]]], dtype="float32")
+        #     # pnts = np.array([[[int(box[0]+(box[2]*0.5)),int(box[1]+(box[3]*0.5))]]] , dtype="float32")
+        #     bd_pnt = cv2.perspectiveTransform(pnts, prespective_transform)[0][0]
+        #     pnt = [int(bd_pnt[0]), int(bd_pnt[1])]
+        #     eye_points.append(pnt)
         return eye_points
     # Function calculates distance between two points(humans). distance_w, distance_h represents number
     # of pixels in 180cm length horizontally and vertically. We calculate horizontal and vertical
@@ -128,3 +128,4 @@ class Utills:
                     g.append(distances_mat[i][1])
     
         return (len(r),len(y),len(g))
+
