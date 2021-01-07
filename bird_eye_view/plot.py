@@ -75,7 +75,7 @@ class Plot:
         for i in bottom_points:
             blank_image = cv2.circle(blank_image, (int(i[0]  * scale_w), int(i[1] * scale_h)), 5, yellow, 10)
             self.draw_axis(blank_image, rotations[count], tdx = int(i[0]  * scale_w), tdy = int(i[1] * scale_h), size = 30)
-            self.draw_eye_direction(blank_image, rotations[count],[int(i[0]  * scale_w),int(i[1] * scale_h)], 5, int(h * scale_h), int(w * scale_w))
+            self.draw_eye_direction(blank_image, rotations[count],[int(i[0]  * scale_w),int(i[1] * scale_h)], 10, int(h * scale_h), int(w * scale_w))
             count += 1
 
 
@@ -92,12 +92,26 @@ class Plot:
             
         return blank_image
 
-    def getIntersec(self, rayPoint, rayDirection, bottom_y, right_x, epsilon=1e-6):
+    def getIntersec(self, rayPoint, rayDirection, bottom_y, right_x, planeSide = 'floor' , epsilon=1e-6):
         # Define plane
         temp = 'floor'
-        planeNormal = np.array([0, 0, 1])
-        planePoint = np.array([0, 0, 0])  # Any point on the plane planePoint(planeNormal)
-
+        if planeSide == 'floor':
+            temp = 'floor'
+            planeNormal = np.array([0, 0, 1])
+            planePoint = np.array([0, 0, 0])  # Any point on the plane planePoint(planeNormal)
+        elif planeSide == 'front':
+            temp = 'front'
+            planeNormal = np.array([0, 1, 0])
+            planePoint = np.array([0, bottom_y, 0])  # Any point on the plane planePoint(planeNormal)
+        elif planeSide == 'left':
+            temp = 'left'
+            planeNormal = np.array([1, 0, 0])
+            planePoint = np.array([0, 0, 0])  # Any point on the plane planePoint(planeNormal)
+        else:
+            #### right wall
+            temp = 'right'
+            planeNormal = np.array([-1, 0, 0])
+            planePoint = np.array([right_x, 0, 0])  # Any point on the plane planePoint(planeNormal)
         # Define ray
         # rayDirection = np.array([0, 0.5, -0.5])
         # rayPoint = np.array([0, 0, 1]) #Any point along the ray rayPoint(rayDirection)
@@ -125,16 +139,23 @@ class Plot:
                     temp = 'left'
                     if abs(ndotu) < epsilon:
                         raise RuntimeError("no intersection or line is within plane")
-        print(temp)
+        # print(temp)
         w = rayPoint - planePoint
         si = -planeNormal.dot(w) / ndotu
         Psi = w + si * rayDirection + planePoint
+        if temp == 'front':
+            Psi[1] = bottom_y
+        elif temp == 'left':
+            Psi[0] = 0
+        elif temp == 'right':
+            Psi[0] = right_x
         return Psi
 
     def getHeadPoseRayDirection(self, rotation, bottom_point, plane_height):
         # print(rotation)
         yaw, pitch, roll = rotation
         yaw = math.radians(yaw)
+        # pitch = np.clip(pitch,-125,0)
         pitch = math.radians(pitch)
         roll = math.radians(roll)
         #### x axis
@@ -150,13 +171,34 @@ class Plot:
 
     def draw_eye_direction(self, img, rotation, bottom_point, plane_height, bottom_y, right_x):
         red = (0, 0, 255)
+        green = (0, 255, 0)
+        yaw, pitch, roll = rotation
         headPoint = [bottom_point[0],bottom_point[1],plane_height]
         headDirection = self.getHeadPoseRayDirection(rotation, bottom_point, plane_height)
         # print(headDirection)
         cv2.circle(img, (int(headDirection[0]), int(headDirection[1])), 1, (0,0,0), 1)
         eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x)
-        # print(eyePoint)
-        cv2.circle(img, (int(np.clip(eyePoint[0],0,right_x)),int(np.clip(eyePoint[1],0,bottom_y))), 2, red, 10)
+        if (eyePoint[1] < 0 or eyePoint[1] > bottom_y) and (eyePoint[0]>0 and eyePoint[0]<right_x):
+            eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'front')
+        elif eyePoint[0] < 0:
+            eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'left')
+        elif eyePoint[0] > right_x:
+            eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'right')
+
+        #### ถ้าเป็นมุมป้าน
+        if eyePoint[1] <= headPoint[1]:
+            eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'front')
+            if eyePoint[0]<0:
+                eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'left')
+            elif eyePoint[0] > right_x:
+                eyePoint = self.getIntersec(headPoint, headDirection, bottom_y, right_x, 'right')
+
+        if pitch >= -125:
+            cv2.circle(img, (int(eyePoint[0]), int(eyePoint[1])), 2, green, 10)
+        else:
+            cv2.circle(img, (int(eyePoint[0]),int(eyePoint[1])), 2, red, 10)
+        cv2.line(img, tuple(bottom_point), (int(eyePoint[0]), int(eyePoint[1])), (0,0,0))
+        # cv2.putText(img, str(pitch), (int(eyePoint[0]),int(eyePoint[1]-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         return img
 
     ## draw x y z
