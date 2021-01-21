@@ -49,12 +49,15 @@ def relative(path):
     return os.path.abspath(path)
 
 class BirdEyeModuleOnlyHead:
-    def __init__(self, video_path, output_dir, output_vid, opencv, scale, closeImShow, bird_width, bird_height):
+    def __init__(self, video_path, output_dir, output_vid, opencv, scale, closeImShow, bird_width, bird_height, plane_height):
         # global cv2
         global utills
         global plot
         self.bird_width = bird_width
         self.bird_height = bird_height
+        print("\nbird_width: " + str(bird_width) + " bird_height: " + str(bird_height));
+        print("\nplane_height: " + str(plane_height));
+        self.plane_height = plane_height;
         self.closeImShow = closeImShow
         plot = Plot()
         utills = Utills(bird_width, bird_height)
@@ -245,9 +248,12 @@ class BirdEyeModuleOnlyHead:
         
         # Draw bird eye view and frame with bouding boxes around humans according to risk factor
         plot = Plot()
-        bird_image = plot.bird_eye_view(image, distances_mat, person_points, scale_w, scale_h, risk_count, eye_points, rotations)
+        bird_image = plot.bird_eye_view(image, distances_mat, person_points, scale_w, scale_h, risk_count, eye_points, rotations, self.plane_height)
         # img = plot.social_distancing_view(frame1, bxs_mat, boxes1, risk_count)
-        
+
+        person_point_scaled = []
+        for person_point in person_points:
+            person_point_scaled.append((person_point[0] * scale_w,person_point[1] * scale_h))
         # Show/write image and videos
         if not self.firstSetup:
 
@@ -263,7 +269,7 @@ class BirdEyeModuleOnlyHead:
             # cv2.imwrite(output_dir+"bird_eye_view/frame%d.jpg" % count, bird_image)
         # cv2.destroyAllWindows()
         
-        return bird_image, plot.getEyePoints()
+        return bird_image, plot.getEyePoints(), person_point_scaled
 
     # def calculate_social_distancing(self, net, ln1):
     #     vid_path = self.vid_path

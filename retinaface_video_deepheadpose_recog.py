@@ -13,6 +13,40 @@ from face_recognition import Recog_feature_extract_module
 from bird_eye_view import BirdEyeModuleOnlyHead
 from deep_head_pose import DeepHeadposeModule
 
+class JsonSave():
+    ### data = [x, y, z, roll, pitch, yaw]
+    ### user = username
+    ### pose = array(user, data)
+    ### frame = frameNumber
+    ### Items = array(frame, pose)
+    jsonData = {
+        'Items': [
+            # {
+            #     'frame': 0,
+            #     'pose': [
+            #         {
+            #             'user': 'username',
+            #             'data': [0,0,0,0,0,0], # x,y,z,yaw,pitch,roll
+            #         }
+            #     ]
+            # }
+        ]
+    }
+
+    pose = []
+
+    def saveFrame(self,frameNumber):
+        self.jsonData['Items'].append({
+            'frame': frameNumber,
+            'pose': self.pose
+        })
+        self.pose = []
+
+    def addDataToFrame(self,username,x,y,z,yaw,pitch,roll):
+        self.pose.append({
+            'user': username,
+            'data': [x, y, z, yaw, pitch, roll]
+        })
 # moving average history
 class History():
     history = {'username':{'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}}
@@ -63,12 +97,14 @@ if __name__ == "__main__":
     parser.add_argument('-nt','--no-train',action='store_true', dest='close_recognition_training', help='Close Recognition Training mode.')
     parser.add_argument('-nb','--no-bird',action='store_true', dest='close_bird_eye', help='Close BirdEye Mode.')
     parser.add_argument('-ni','--no-img-show',action='store_true', dest='close_show_image', help='Close Image Realtime show.')    
-    parser.add_argument('-cpu','--use-cpu',action='store_true', dest='use_cpu', help='Use CPU.')        
+    parser.add_argument('-cpu','--use-cpu',action='store_true', dest='use_cpu', help='Use CPU.')
+    parser.add_argument('-ph','--plane-height',dest='plane_height',type=int,default=0, help='Set your plane height from the floor.')
     args = vars(parser.parse_args())
     # hpd = headpose_module.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
     print('close_recognition : {}'.format(args["close_recognition"]))
     print('close_bird_eye : {}'.format(args["close_bird_eye"]))
+    plane_height = args["plane_height"]
     closeBirdEye = args["close_bird_eye"]
     closeImShow = args["close_show_image"]
     frameSkipNumber = args["frame_skip_number"]
@@ -108,7 +144,7 @@ if __name__ == "__main__":
         v_w = int(width * scale)+2*int(height * scale/2)
         v_h = int(height * scale)
         bird_w = 800
-        birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h)
+        birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h, plane_height = plane_height)
         print('\ncalcurate YAW added : '+ str(birdEye.getYawAdded()))
         ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
         out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
@@ -118,6 +154,7 @@ if __name__ == "__main__":
     print(f'w: {width*scale} h: {height*scale}')
 
     # intitial frame
+    jsonSave = JsonSave()
     start_frame = args["start_frame"]
     count = start_frame
     cap.set(cv2.CAP_PROP_POS_FRAMES, count)
@@ -145,6 +182,7 @@ if __name__ == "__main__":
         # print(f'find face : {len(faces)}\n')
         used_face = 0
         boxs = []
+        user_names = []
         rotations = []
         direction_points = []
         for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
@@ -230,7 +268,7 @@ if __name__ == "__main__":
                 #### if using CPU
                 rotations.append((12.3872, -108.2779, 6.8547));
             # img, angles, new_history = hpd.process_image(img,box,True,1)
-
+            user_names.append(user_name);
             # width, height = cropped.shape[:2]
             # print(f'w: {width} h: {height}')
             
@@ -242,9 +280,9 @@ if __name__ == "__main__":
                     point = tuple(p.astype(int))
                     # cv2.circle(img, point, 1, Color.yellow,-1)
             # draw head detector
-            # cv2.rectangle(
-            #     img, (x,y), (w,h), color=(255, 0, 0), thickness=1
-            # )
+            cv2.rectangle(
+                img, (x,y), (w,h), color=(0, 255, 0), thickness=2
+            )
             used_face += 1
 ######### Draw Position Saved #########
         i = 0
@@ -267,7 +305,7 @@ if __name__ == "__main__":
 ######### Show Bird Eye View #########
         if not closeBirdEye:
             ## birdEyeImg = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
-            birdEyeImg, eyePoints = birdEye.calculate_social_distancing_retina_box(boxs, img, rotations)
+            birdEyeImg, eyePoints, personPoints = birdEye.calculate_social_distancing_retina_box(boxs, img, rotations)
             saveEyePoints.append(eyePoints)
 
             # pad = np.full((img.shape[0],700,3), [255, 255, 255], dtype=np.uint8)
@@ -277,6 +315,11 @@ if __name__ == "__main__":
             img = np.hstack((birdEyeImg, img))
             # cv2.imshow('img', img)
 ######### Close Show Bird Eye View #########
+######### Json Saving ###########
+            i = 0
+            for rov in rotations:
+                jsonSave.addDataToFrame(user_names[i], personPoints[i][0], personPoints[i][1], plane_height,  float(rov[0]), float(rov[1]), float(rov[2]));
+                i += 1
 
         # print(f'\rused face : {used_face}\n')    
         # print('\rframe: %d \n' % count, end='')
@@ -287,6 +330,7 @@ if __name__ == "__main__":
         if cv2.waitKey(1) & 0xFF == ord('q'):
             headpose_module.t.summary()
             break
+        jsonSave.saveFrame(count);
         out.write(img)#cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
         count += 1
         # close head-pose
@@ -295,6 +339,8 @@ if __name__ == "__main__":
 
     with open(outputPath + ".json", "w") as savefile:
         json.dump(saveEyePoints, savefile)
+    with open(outputPath + "-unity.json", "w") as savefile:
+        json.dump(jsonSave.jsonData, savefile)
     # When everything done, release the capture
     cap.release()
     out.release()

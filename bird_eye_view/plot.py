@@ -25,7 +25,7 @@ class Plot:
     # Red: High Risk
     # Yellow: Low Risk
     # Green: No Risk
-    def bird_eye_view(self, frame, distances_mat, bottom_points, scale_w, scale_h, risk_count, eye_points, rotations):
+    def bird_eye_view(self, frame, distances_mat, bottom_points, scale_w, scale_h, risk_count, eye_points, rotations, plane_height):
         h = frame.shape[0]
         w = frame.shape[1]
         global saveEyePoints
@@ -76,7 +76,7 @@ class Plot:
         for i in bottom_points:
             blank_image = cv2.circle(blank_image, (int(i[0]  * scale_w), int(i[1] * scale_h)), 5, yellow, 10)
             self.draw_axis(blank_image, rotations[count], tdx = int(i[0]  * scale_w), tdy = int(i[1] * scale_h), size = 30)
-            self.draw_eye_direction(blank_image, rotations[count],[int(i[0]  * scale_w),int(i[1] * scale_h)], 10, int(h * scale_h), int(w * scale_w))
+            self.draw_eye_direction(blank_image, rotations[count],[int(i[0]  * scale_w),int(i[1] * scale_h)], plane_height, int(h * scale_h), int(w * scale_w))
             count += 1
 
 
