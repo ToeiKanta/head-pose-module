@@ -1,7 +1,11 @@
+# export GOOGLE_APPLICATION_CREDENTIALS="/Users/admin/Google Drive/Colab Notebooks/head-pose-module/deepheadposeapp-7b346656fe5c.json"
+
 import logging
 from CloudPubSub.consts import consts
 from CloudPubSub.subscriber import listen
+from CloudStorage.services import download_blob, upload_blob
 import time
+import os
 
 def record_job_status(message, status, err_msg, return_vals):
     # return_vals is for communication with worker
@@ -11,8 +15,8 @@ def record_job_status(message, status, err_msg, return_vals):
     # may also consider recording the job status in your mysql database
     # update_job_status(message, status)  # not implement
 
-def run_step1(msg):
-    logging.info("[run step 1] message : %s\n", msg)
+def test_step(msg):
+    logging.info("[Test run] message : %s\n", msg)
     t_end = time.time() + 20
     while time.time() < t_end:
         # do whatever you do
@@ -21,17 +25,56 @@ def run_step1(msg):
     err_msg = ""
     return status, err_msg
 
+def download_video(video_path):
+    logging.info("[run step 1] Download video from : %s\n", video_path)
+    videoName = os.path.basename(video_path)
+    logging.info(video_path)
+    logging.info(videoName)
+    download_blob('default', video_path, 'Test/' + videoName)
+    status = consts.DONE_STATUS
+    err_msg = ""
+    return status, err_msg
+
+def process_video(video_path):
+    logging.info("[run step 2] Process_video : %s\n", video_path)
+    t_end = time.time() + 20
+    while time.time() < t_end:
+        # do whatever you do
+        pass
+    status = consts.DONE_STATUS
+    err_msg = ""
+    return status, err_msg
+
+def upload_video(src_path, video_path):
+    logging.info("[run step 3] Upload video from : %s to : %s\n", video_path, src_path)
+    upload_blob('default', src_path, video_path)
+    status = consts.DONE_STATUS
+    err_msg = ""
+    return status, err_msg
+
 @listen
 def start_service(return_vals, message):
     try:
-        logging.info("Processing message: %s" % message.message.data)
-
-        status, err_msg = run_step1(message.message.data)
+        # logging.info("Processing message: %s" % message.message.data)
+        video_path = message.message.data.decode("utf-8")
+        status, err_msg = download_video(video_path)
         if status!= consts.DONE_STATUS:
-            logging.error("Failed to run step1!")
+            logging.error("Failed to run step1 - Download video!")
+            record_job_status(message, status, err_msg, return_vals)
+            return
+        status, err_msg = process_video(video_path)
+        if status != consts.DONE_STATUS:
+            logging.error("Failed to run step2! - Process video")
             record_job_status(message, status, err_msg, return_vals)
             return
 
+        src_path = 'Test/' + os.path.basename(video_path)
+        video_upload_path = 'videos/user_id/process_id/results/' + os.path.basename(video_path) + '-result.mov'
+        status, err_msg = upload_video(src_path, video_upload_path)
+        if status != consts.DONE_STATUS:
+            logging.error("Failed to run step3! - Upload video result")
+            record_job_status(message, status, err_msg, return_vals)
+            return
         logging.info("Message completely processed: %s" % message.message.data)
         # may also consider recording the job status in your mysql database
         # update_job_status(message, "DONE")  # not implement

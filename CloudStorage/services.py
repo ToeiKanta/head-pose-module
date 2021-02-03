@@ -2,6 +2,8 @@ from google.cloud import storage # pip install --upgrade google-cloud-storage
 # export GOOGLE_APPLICATION_CREDENTIALS="/Users/admin/Google Drive/Colab Notebooks/head-pose-module/deepheadposeapp-7b346656fe5c.json"
 
 def download_blob(bucket_name, source_blob_name, destination_file_name):
+    if bucket_name == 'default':
+        bucket_name = 'deepheadposeapp.appspot.com'
     """Downloads a blob from the bucket."""
     # bucket_name = "your-bucket-name"
     # source_blob_name = "storage-object-name"
@@ -25,6 +27,8 @@ def download_blob(bucket_name, source_blob_name, destination_file_name):
     )
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
+    if bucket_name == 'default':
+        bucket_name = 'deepheadposeapp.appspot.com'
     """Uploads a file to the bucket."""
     # bucket_name = "deepheadposeapp.appspot.com"
     # source_file_name = "local/path/to/file"
