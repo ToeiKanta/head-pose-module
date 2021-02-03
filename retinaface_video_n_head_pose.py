@@ -22,7 +22,7 @@ if __name__ == "__main__":
     # Initialize head pose detection
     hpd = headpose_pure.HeadposeDetection(args["landmark_type"], args["landmark_predictor"])
     # close head-pose 
-    filename = './Test/classroom.mp4'
+    filename = 'Test/old/classroom.mp4'
     scale = 0.8
     detector = RetinaFace(gpu_id=0)
     cap = cv2.VideoCapture(filename)

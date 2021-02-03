@@ -1,11 +1,13 @@
 # export GOOGLE_APPLICATION_CREDENTIALS="/Users/admin/Google Drive/Colab Notebooks/head-pose-module/deepheadposeapp-7b346656fe5c.json"
-
+## for test
+# videos/user_id/process_id/results/classroom.mp4
 import logging
 from CloudPubSub.consts import consts
 from CloudPubSub.subscriber import listen
 from CloudStorage.services import download_blob, upload_blob
 import time
 import os
+import subprocess
 
 def record_job_status(message, status, err_msg, return_vals):
     # return_vals is for communication with worker
@@ -35,12 +37,9 @@ def download_video(video_path):
     err_msg = ""
     return status, err_msg
 
-def process_video(video_path):
+def process_video(video_path, start_frame = 3000,frame_length = 550,scale = 0.8):
     logging.info("[run step 2] Process_video : %s\n", video_path)
-    t_end = time.time() + 20
-    while time.time() < t_end:
-        # do whatever you do
-        pass
+    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni' ,'-cpu', '-fl', str(frame_length), '-nr' ,'-sf', str(start_frame),'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80'],shell=False)
     status = consts.DONE_STATUS
     err_msg = ""
     return status, err_msg
@@ -57,6 +56,7 @@ def start_service(return_vals, message):
     try:
         # logging.info("Processing message: %s" % message.message.data)
         video_path = message.message.data.decode("utf-8")
+
         status, err_msg = download_video(video_path)
         if status!= consts.DONE_STATUS:
             logging.error("Failed to run step1 - Download video!")
@@ -68,7 +68,7 @@ def start_service(return_vals, message):
             record_job_status(message, status, err_msg, return_vals)
             return
 
-        src_path = 'Test/' + os.path.basename(video_path)
+        src_path = 'output/' + os.path.basename(video_path)
         video_upload_path = 'videos/user_id/process_id/results/' + os.path.basename(video_path) + '-result.mov'
         status, err_msg = upload_video(src_path, video_upload_path)
         if status != consts.DONE_STATUS:
