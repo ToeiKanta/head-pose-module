@@ -39,7 +39,7 @@ def download_video(video_path):
 
 def process_video(video_path, start_frame = 3000,frame_length = 550,scale = 0.8):
     logging.info("[run step 2] Process_video : %s\n", video_path)
-    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni' ,'-cpu', '-fl', str(frame_length), '-nr' ,'-sf', str(start_frame),'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80'],shell=False)
+    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni', '-fl', str(frame_length), '-nr' ,'-sf', str(start_frame),'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80'],shell=False)
     status = consts.DONE_STATUS
     err_msg = ""
     return status, err_msg
