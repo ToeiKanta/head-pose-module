@@ -8,6 +8,10 @@
 ### Venv
 * https://uoa-eresearch.github.io/eresearch-cookbook/recipe/2014/11/26/python-virtual-env/
 
+### Geting start
+
+`pip install --upgrade firebase-admin`
+
 ### Main file 
 * retinaface_video_headpose_recog.py
 * headpose_module.py
