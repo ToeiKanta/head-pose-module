@@ -42,9 +42,10 @@ exports.helloWorld = functions.region(region).https
 exports.createFirstUser = functions.region(region).auth.user()
     .onCreate((user) => {
       const uid = user.uid;
-      db.collection("users").doc(uid).set({"processes": []}).then(() => {
-        functions.logger.info(`User ${uid} created.`);
-      });
+      db.collection("users").doc(uid)
+          .set({"processes": []}, {merge: true}).then(() => {
+            functions.logger.info(`User ${uid} created.`);
+          });
     });
 
 exports.onUserDeleted = functions.region(region).auth.user()
@@ -56,7 +57,9 @@ exports.onUserDeleted = functions.region(region).auth.user()
     });
 interface ProcessType {
   id: string,
-  status: "QUEUE" | "PROCESS" | "SUCCESS" | "FAILED",
+  status: "UPLOAD" | "QUEUE" | "PROCESS" | "SUCCESS" | "FAILED",
+  // eslint-disable-next-line camelcase
+  file_path: string,
   percent: number,
   // eslint-disable-next-line camelcase
   error_msg: string,
@@ -68,6 +71,50 @@ interface ProcessType {
 interface UserType {
   processes: Array<firestore.DocumentReference>
 }
+const uploadVideoToPath = async (filePath:string) => {
+  const f = filePath.split(".");
+  const fileExe = f[f.length-1].toLowerCase();
+  if (fileExe !== "mp4" && fileExe !== "mov") {
+    return functions.logger.error("file :" + fileExe + "is not support");
+  }
+  if ( filePath !== undefined ) {
+    // paths
+    // 0 = videos, 1 = <user_id>, 2 = <process_id>, 3 = 'result' or 'upload'
+    const paths = filePath.split("/");
+    const uid = paths[1];
+    const pid = paths[2];
+    const usersRef = db.collection("users").doc(uid);
+    const userDoc = await usersRef.get();
+    functions.logger.info(" uid : " + uid + " - pid : " + pid);
+    if (userDoc.exists) {
+      functions.logger.debug("Document data:", userDoc.data());
+      const userData : UserType = userDoc.data();
+      const processesId = userData.processes;
+      processesId.push(db.doc("processes/" + pid));
+      userData.processes = processesId;
+      await usersRef.update(userData);
+      const processData: ProcessType = {
+        "id": pid,
+        "file_path": filePath,
+        "status": "UPLOAD",
+        "percent": 0,
+        "error_msg": "",
+        "created_date": Timestamp.now(),
+        "updated_date": Timestamp.now(),
+      };
+      db.collection("processes").doc(pid)
+          .set(processData, {merge: true}).then(() => {
+            functions.logger.info(`Process ${pid} created!!`);
+          });
+      // eslint-disable-next-line max-len
+      functions.logger.info(" User : " + uid + " - Add process : " + pid + " to queue");
+      functions.logger.debug("New document data:", userData);
+    } else {
+      // eslint-disable-next-line max-len
+      functions.logger.error("User : " + uid + " - Doesn't exists on Firestore Database");
+    }
+  }
+};
 exports.addTaskQueue = functions.region(region).storage.object()
     .onFinalize(async (object) => {
       // const fileBucket = object.bucket;
@@ -83,61 +130,12 @@ exports.addTaskQueue = functions.region(region).storage.object()
       // if (!contentType.startsWith("video/")) {
       //   return console.log("This is not a video.");
       // }
-      const f = filePath.split(".");
-      const fileExe = f[f.length-1].toLowerCase();
-      if (fileExe !== "mp4" && fileExe !== "mov") {
-        return functions.logger.error("file :" + fileExe + "is not support");
-      }
-      const pubSubClient = new PubSub();
-      if ( filePath !== undefined ) {
-        // paths
-        // 0 = videos, 1 = <user_id>, 2 = <process_id>, 3 = 'result' or 'upload'
-        const paths = filePath.split("/");
-        const uid = paths[1];
-        const pid = paths[2];
-        const usersRef = db.collection("users").doc(uid);
-        const userDoc = await usersRef.get();
-        functions.logger.info(" uid : " + uid + " - pid : " + pid);
-        if (userDoc.exists) {
-          functions.logger.debug("Document data:", userDoc.data());
-          const userData : UserType = userDoc.data();
-          const processesId = userData.processes;
-          processesId.push(db.doc("processes/" + pid));
-          userData.processes = processesId;
-          await usersRef.update(userData);
-          const processData: ProcessType = {
-            "id": pid,
-            "status": "QUEUE",
-            "percent": 0,
-            "error_msg": "",
-            "created_date": Timestamp.now(),
-            "updated_date": Timestamp.now(),
-          };
-          db.collection("processes").doc(pid).set(processData).then(() => {
-            functions.logger.info(`Process ${pid} created!!`);
-          });
-          // eslint-disable-next-line max-len
-          functions.logger.info(" User : " + uid + " - Add process : " + pid + " to queue");
-          functions.logger.debug("New document data:", userData);
-        } else {
-          // eslint-disable-next-line max-len
-          functions.logger.error("User : " + uid + " - Doesn't exists on Firestore Database");
-        }
-        const dataBuffer = Buffer.from(filePath);
-        try {
-          // eslint-disable-next-line max-len
-          const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
-          functions.logger.info(`Message queue ${messageId} published.`);
-        } catch (error) {
-          functions.logger.error(`Error while publishing: ${error.message}`);
-          process.exitCode = 1;
-        }
-      }
+      uploadVideoToPath(filePath);
     });
 
 exports.processUpdate = functions.region(region).firestore
     .document("processes/{processId}")
-    .onUpdate((change, context) => {
+    .onUpdate(async (change, context) => {
       // https://firebase.google.com/docs/functions/firestore-events
       // Get an object representing the document
       // e.g. {'name': 'Marie', 'age': 66}
@@ -151,6 +149,19 @@ exports.processUpdate = functions.region(region).firestore
       if (newValue.status == previousValue.status &&
           newValue.percent == previousValue.percent) {
         return null;
+      }
+      if (newValue.status != previousValue.status &&
+          newValue.status === "QUEUE") {
+        const pubSubClient = new PubSub();
+        const dataBuffer = Buffer.from(newValue.file_path);
+        try {
+          // eslint-disable-next-line max-len
+          const messageId = await pubSubClient.topic(topicName).publish(dataBuffer);
+          functions.logger.info(`Message queue ${messageId} published.`);
+        } catch (error) {
+          functions.logger.error(`Error while publishing: ${error.message}`);
+          process.exitCode = 1;
+        }
       }
       // access a particular field as you would any JS property
       // const name = newValue.name;
