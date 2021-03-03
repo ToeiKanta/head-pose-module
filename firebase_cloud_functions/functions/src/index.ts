@@ -5,6 +5,12 @@ import Timestamp = firestore.Timestamp;
 // // Start writing Firebase Functions
 // // https://firebase.google.com/docs/functions/typescript
 //
+// Imports the Google Cloud client library
+const {Storage} = require("@google-cloud/storage");
+const bucketName = "deepheadposeapp.appspot.com";
+
+// Creates a client
+const storage = new Storage();
 
 const region = "asia-southeast2";
 const builderFunction = functions.region(region).https;
@@ -166,6 +172,53 @@ exports.processUpdate = functions.region(region).firestore
       // access a particular field as you would any JS property
       // const name = newValue.name;
 
+      // Then return a promise of a set operation to update the count
+      return change.after.ref.set({
+        updated_date: Timestamp.now(),
+      }, {merge: true});
+    });
+exports.userProcessDeleted = functions.region(region).firestore
+    .document("users/{userId}")
+    .onUpdate(async (change, context) => {
+      // https://firebase.google.com/docs/functions/firestore-events
+      // Get an object representing the document
+      // e.g. {'name': 'Marie', 'age': 66}
+      const newValue = change.after.data();
+
+      // ...or the previous value before this update
+      const previousValue = change.before.data();
+
+      // We'll only update if processes has changed.
+      // This is crucial to prevent infinite loops.
+      if (newValue.processes.length == previousValue.processes.length) {
+        return null;
+      }
+      if (newValue.processes.length < previousValue.processes.length) {
+        const newPaths = newValue.processes
+            .map((ref: { path: String; }) => ref.path);
+        for (const data of previousValue.processes) {
+          if (!newPaths.includes(data.path)) {
+            await data.delete();
+            functions.logger.info("Delete collection " + data.path + ".");
+            // Deletes the file from the bucket
+            const filename = "videos/" +
+                context.params.userId +
+                "/" + data.path.split("/")[1] + "/";
+            const bucket = storage.bucket(bucketName);
+            // await storage.bucket(bucketName).file(filename).delete();
+            bucket.deleteFiles({
+              prefix: filename,
+            }, function(err: any) {
+              if (!err) {
+                // All files in the `images` directory have been deleted.
+                functions.logger.info(`gs://${bucketName}/${filename} deleted.`);
+              } else {
+                functions.logger.error(err);
+              }
+            });
+          }
+        }
+      }
       // Then return a promise of a set operation to update the count
       return change.after.ref.set({
         updated_date: Timestamp.now(),
