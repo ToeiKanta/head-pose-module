@@ -63,7 +63,11 @@ exports.onUserDeleted = functions.region(region).auth.user()
     });
 interface ProcessType {
   id: string,
-  status: "UPLOAD" | "QUEUE" | "PROCESS" | "SUCCESS" | "FAILED",
+  status: "UPLOAD" | "SETUP" | "QUEUE" | "PROCESS" | "SUCCESS" | "FAILED",
+  // eslint-disable-next-line camelcase
+  owner: firestore.DocumentReference,
+  // eslint-disable-next-line camelcase
+  process_cycle: number,
   // eslint-disable-next-line camelcase
   file_path: string,
   percent: number,
@@ -75,7 +79,9 @@ interface ProcessType {
   updated_date: Timestamp
 }
 interface UserType {
-  processes: Array<firestore.DocumentReference>
+  processes: Array<firestore.DocumentReference>;
+  // eslint-disable-next-line camelcase
+  updated_date?: Timestamp;
 }
 const uploadVideoToPath = async (filePath:string) => {
   const f = filePath.split(".");
@@ -101,9 +107,11 @@ const uploadVideoToPath = async (filePath:string) => {
       await usersRef.update(userData);
       const processData: ProcessType = {
         "id": pid,
+        "owner": db.collection("users").doc(uid),
         "file_path": filePath,
         "status": "UPLOAD",
         "percent": 0,
+        "process_cycle": 0,
         "error_msg": "",
         "created_date": Timestamp.now(),
         "updated_date": Timestamp.now(),
@@ -156,6 +164,7 @@ exports.processUpdate = functions.region(region).firestore
           newValue.percent == previousValue.percent) {
         return null;
       }
+      // if status change to QUEUE
       if (newValue.status != previousValue.status &&
           newValue.status === "QUEUE") {
         const pubSubClient = new PubSub();
@@ -169,6 +178,13 @@ exports.processUpdate = functions.region(region).firestore
           process.exitCode = 1;
         }
       }
+      // if status change to PROCESS
+      if (newValue.status != previousValue.status &&
+            newValue.status === "PROCESS") {
+        await change.after.ref.set({
+          process_cycle: newValue.process_cycle + 1,
+        }, {merge: true});
+      }
       // access a particular field as you would any JS property
       // const name = newValue.name;
 
@@ -176,6 +192,25 @@ exports.processUpdate = functions.region(region).firestore
       return change.after.ref.set({
         updated_date: Timestamp.now(),
       }, {merge: true});
+    });
+// https://firebase.google.com/docs/functions/firestore-events
+exports.processDeleted = functions.region(region).firestore
+    .document("processes/{processId}")
+    .onDelete(async (snapshot, context) => {
+      const process: FirebaseFirestore.DocumentData = snapshot.data();
+      const processId = context.params.processId;
+      const userDoc = await process.owner.get();
+      if (!userDoc.exists) {
+        console.log("No such document!");
+      } else {
+        const user : UserType = userDoc.data();
+        const processDeleted = db.collection("processes").doc(processId);
+        user.processes = user.processes.filter(
+            (processRef) => processRef.path != processDeleted.path);
+        process.owner.set({
+          processes: user.processes,
+        }, {merge: true});
+      }
     });
 exports.userProcessDeleted = functions.region(region).firestore
     .document("users/{userId}")
@@ -193,6 +228,7 @@ exports.userProcessDeleted = functions.region(region).firestore
       if (newValue.processes.length == previousValue.processes.length) {
         return null;
       }
+      // if processes deleted
       if (newValue.processes.length < previousValue.processes.length) {
         const newPaths = newValue.processes
             .map((ref: { path: String; }) => ref.path);
