@@ -59,6 +59,13 @@ class JsonSave():
             'user': username,
             'data': [x, y, z, yaw, pitch, roll]
         })
+class MyFunc():
+    def deletedAllInputOutputFile(self,input,output):
+        print("\nremove all files in: " + input + " out:" + output)
+        os.remove(input)
+        os.remove(output);
+        os.remove(output + ".json");
+        os.remove(output + "-unity.json");
 # moving average history
 class History():
     history = {'username':{'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}}
@@ -153,6 +160,7 @@ if __name__ == "__main__":
                 print(f'\nDocument data: {processDict}')
             else:
                 print(f'\nNo such document!')
+                MyFunc.deletedAllInputOutputFile(filename, outputPath);
                 exit(1)
         ##
         if not useCPU:
@@ -185,13 +193,12 @@ if __name__ == "__main__":
             v_h = int(height * scale)
             bird_w = 800
             birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h, plane_height = plane_height)
-            print('\ncalcurate YAW added : '+ str(birdEye.getYawAdded()))
             ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
             out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
         else:
             out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width*scale), int(height*scale)))
         # high performance at w: 540.0 h: 960.0
-        print(f'w: {width*scale} h: {height*scale}')
+        print(f'Main: origin w: {width*scale} h: {height*scale}')
 
         # intitial frame
         jsonSave = JsonSave()
@@ -215,19 +222,29 @@ if __name__ == "__main__":
             # expand image horizontal for easy to setup bird view space
             if not closeBirdEye:
                 h, w = img.shape[:2]
-                img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
+                if(useFirebase):
+                    img = cv2.copyMakeBorder(img, int(h * processDict["setup"]["padding_y"]), int(h * processDict["setup"]["padding_y"]), int(w * processDict["setup"]["padding_x"]), int(w * processDict["setup"]["padding_x"]), cv2.BORDER_CONSTANT,
+                                             value=[255, 255, 255])  # top, bottom, left, right
+                    if count == start_frame: # run setup only firstFrame
+                        h, w = img.shape[:2]
+                        birdEye.setupFirebase(processDict, w, h)
+                else:
+                    img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
+            # <note> img หลังจากนี้ จะมี padding แล้ว
+            h, w = img.shape[:2]
+            if count == start_frame:  # run setup only firstFrame
+                print(f'\nMain: img + padding w: {w} h: {h}')
+                print('\nMain: Calcurate YAW added : ' + str(birdEye.getYawAdded()))
             faces = detector(img_rgb)
-
             # print(f'find face : {len(faces)}\n')
             used_face = 0
             boxs = []
             user_names = []
             rotations = []
             direction_points = []
-            for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
 
+            for box, landmarks, score in faces: # box = x,y,w,h โดย frame[y:h, x:w]
                 if score <= 0.3:
                     # print(f'\n skipped score <= 0.2 \n')
                     continue
@@ -353,6 +370,7 @@ if __name__ == "__main__":
                 #cv2.putText(pad, "-- HIGH RISK : " + str(risk_count[0]) + " people", (50, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
                 #cv2.putText(pad, "-- LOW RISK : " + str(risk_count[1]) + " people", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1)
                 #cv2.putText(pad, "-- SAFE : " + str(risk_count[2]) + " people", (50,  80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                # print(f"\nMain: BirdEyeImg ({birdEyeImg.shape[1]},{birdEyeImg.shape[0]}) img ({img.shape[1]},{img.shape[0]})")
                 img = np.hstack((birdEyeImg, img))
                 # cv2.imshow('img', img)
     ######### Close Show Bird Eye View #########
@@ -393,6 +411,7 @@ if __name__ == "__main__":
             processDict['status'] = u"SUCCESS"
             processDict['percent'] = 100
             process_ref.update(processDict)
+            MyFunc.deletedAllInputOutputFile(filename,outputPath);
         ######### close save status process ##########
         # When everything done, release the capture
         cap.release()
@@ -405,4 +424,6 @@ if __name__ == "__main__":
             processDict['status'] = u"FAILED"
             processDict['percent'] = 100
             processDict['error_msg'] = str(sys.exc_info()[0])
+            MyFunc.deletedAllInputOutputFile(filename,outputPath);
             process_ref.update(processDict)
+
