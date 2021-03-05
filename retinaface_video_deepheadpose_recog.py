@@ -231,7 +231,7 @@ if __name__ == "__main__":
             bird_w = 800
             birdEye = BirdEyeModuleOnlyHead(useFirebase=useFirebase,output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h, plane_height = plane_height)
             ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
-            out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
+            # out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
         else:
             out = cv2.VideoWriter(outputPath, fourcc, fps, (int(width*scale), int(height*scale)))
         # high performance at w: 540.0 h: 960.0
@@ -264,10 +264,10 @@ if __name__ == "__main__":
                                              value=[255, 255, 255])  # top, bottom, left, right
                     if count == start_frame: # run setup only firstFrame
                         h, w = img.shape[:2]
-                        out = cv2.VideoWriter(outputPath, fourcc, fps, (w + bird_w, h))
                         birdEye.setupFirebase(processDict, w, h)
-                        birdEyeSize = birdEye.getBirdEyeSize()
-                        jsonSave.saveBirdEyeConfig(birdEyeSize[0],birdEyeSize[1],birdEyeSize[2])
+                        bSize = birdEye.getBirdEyeSize()
+                        out = cv2.VideoWriter(outputPath, fourcc, fps, (w + int(bSize[0]),int(bSize[1])))
+                        jsonSave.saveBirdEyeConfig(bSize[0],bSize[1],bSize[2])
                 else:
                     img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -446,6 +446,11 @@ if __name__ == "__main__":
             json.dump(saveEyePoints, savefile)
         with open(outputPath + "-unity.json", "w") as savefile:
             json.dump(jsonSave.jsonData, savefile)
+        ######### close save status process ##########
+        # When everything done, release the capture
+        cap.release()
+        out.release()
+        print(f'\nEnd Success:')
         ######### save firebase status process ###########
         if useFirebase:
             processDict['status'] = u"SUCCESS"
@@ -453,13 +458,7 @@ if __name__ == "__main__":
             MyFunc.uploadResult(outputPath, firebase_uid, firebase_pid, process_ref)
             MyFunc.deletedAllInputOutputFile(filename, outputPath)
             process_ref.update(processDict)
-
-        ######### close save status process ##########
-        # When everything done, release the capture
-        cap.release()
-        out.release()
         cv2.destroyAllWindows()
-        print(f'\nEnd Success:')
     except Exception as e:
         print(f'\nMain: Error\n')
         print(e)
