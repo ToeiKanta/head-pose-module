@@ -49,11 +49,11 @@ def relative(path):
     return os.path.abspath(path)
 
 class BirdEyeModuleOnlyHead:
-    def __init__(self, video_path, output_dir, output_vid, opencv, scale, closeImShow, bird_width, bird_height, plane_height):
+    def __init__(self, useFirebase, video_path, output_dir, output_vid, opencv, scale, closeImShow, bird_width, bird_height, plane_height):
         # global cv2
         global utills
         global plot
-        self.useFirebase = False;
+        self.useFirebase = useFirebase
         self.bird_width = bird_width
         self.bird_height = bird_height
         print("\nbird_width: " + str(bird_width) + " bird_height: " + str(bird_height));
@@ -133,7 +133,7 @@ class BirdEyeModuleOnlyHead:
         self.useFirebase = True
         self.processDict = processDict
         self.img_width = img_width
-        self.img_heigght = img_height
+        self.img_height = img_height
         self.bird_height = img_height
         utills = Utills(self.bird_width, self.bird_height)
         print(f"\nBirdEyeView: Change BirdEyeSize to w:{self.bird_width} h:{self.bird_height}")
@@ -142,19 +142,19 @@ class BirdEyeModuleOnlyHead:
         try:
             borderStr = self.processDict["setup"]["border"].split(',')
             farPointStr = self.processDict["setup"]["far_point"].split(',')
-            borderPoint1 = (float(borderStr[0]) * self.img_width, float(borderStr[1]) * self.img_heigght)
+            borderPoint1 = (float(borderStr[0]) * self.img_width, float(borderStr[1]) * self.img_height)
             print(f'\nBirdEyeView: borderPoint1 = ({borderPoint1[0]},{borderPoint1[1]})')
-            borderPoint2 = (float(borderStr[2]) * self.img_width, float(borderStr[3]) * self.img_heigght)
+            borderPoint2 = (float(borderStr[2]) * self.img_width, float(borderStr[3]) * self.img_height)
             print(f'\nBirdEyeView: borderPoint2 = ({borderPoint2[0]},{borderPoint2[1]})')
-            borderPoint3 = (float(borderStr[4]) * self.img_width, float(borderStr[5]) * self.img_heigght)
+            borderPoint3 = (float(borderStr[4]) * self.img_width, float(borderStr[5]) * self.img_height)
             print(f'\nBirdEyeView: borderPoint3 ({borderPoint3[0]},{borderPoint3[1]})')
-            borderPoint4 = (float(borderStr[6]) * self.img_width, float(borderStr[7]) * self.img_heigght)
+            borderPoint4 = (float(borderStr[6]) * self.img_width, float(borderStr[7]) * self.img_height)
             print(f'\nBirdEyeView: borderPoint4 ({borderPoint4[0]},{borderPoint4[1]})')
-            farPoint1 = (float(farPointStr[0]) * self.img_width, float(farPointStr[1]) * self.img_heigght)
+            farPoint1 = (float(farPointStr[0]) * self.img_width, float(farPointStr[1]) * self.img_height)
             print(f'\nBirdEyeView: farPoint1 ({farPoint1[0]},{farPoint1[1]})')
-            farPoint2 = (float(farPointStr[2]) * self.img_width, float(farPointStr[3]) * self.img_heigght)
+            farPoint2 = (float(farPointStr[2]) * self.img_width, float(farPointStr[3]) * self.img_height)
             print(f'\nBirdEyeView: farPoint2 ({farPoint2[0]},{farPoint2[1]})')
-            farPoint3 = (float(farPointStr[4]) * self.img_width, float(farPointStr[5]) * self.img_heigght)
+            farPoint3 = (float(farPointStr[4]) * self.img_width, float(farPointStr[5]) * self.img_height)
             print(f'\nBirdEyeView: farPoint3 ({farPoint3[0]},{farPoint3[1]})')
             mouse_pts.append(borderPoint1)
             mouse_pts.append(borderPoint2)

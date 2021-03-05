@@ -1,7 +1,23 @@
-from google.cloud import storage # pip install --upgrade google-cloud-storage
+# from google.cloud import storage # pip install --upgrade google-cloud-storage
+# import firebase_admin
+# from firebase_admin import credentials
+from google.cloud import storage
+# import os
+# # def get_project_dir():
+# #     current_path = os.path.abspath(os.path.join(__file__, "../"))
+# #     return current_path
+# #
+# # def relative(path):
+# #     path = os.path.join(get_project_dir(), path)
+# #     return os.path.abspath(path)
+# #
+# # cred = credentials.Certificate(relative("../deepheadposeapp-7b346656fe5c.json"))
+# # firebase_admin.initialize_app(cred, {
+# #     'storageBucket': 'deepheadposeapp.appspot.com'
+# # })
 # export GOOGLE_APPLICATION_CREDENTIALS="/Users/admin/Google Drive/Colab Notebooks/head-pose-module/deepheadposeapp-7b346656fe5c.json"
 
-def download_blob(bucket_name, source_blob_name, destination_file_name):
+def download_blob(bucket_name = 'deepheadposeapp.appspot.com', source_blob_name = "", destination_file_name = ""):
     if bucket_name == 'default':
         bucket_name = 'deepheadposeapp.appspot.com'
     """Downloads a blob from the bucket."""
@@ -13,6 +29,7 @@ def download_blob(bucket_name, source_blob_name, destination_file_name):
 
     bucket = storage_client.bucket(bucket_name)
 
+    print("\nCloudStorage: Download file from: " + source_blob_name + " to:" + destination_file_name)
     # Construct a client side representation of a blob.
     # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
     # any content from Google Cloud Storage. As we don't need additional data,

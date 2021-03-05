@@ -16,6 +16,7 @@ from deep_head_pose import DeepHeadposeModule
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from CloudStorage.services import download_blob, upload_blob
 
 def get_project_dir():
     current_path = os.path.abspath(os.path.join(__file__, "../"))
@@ -60,12 +61,13 @@ class JsonSave():
             'data': [x, y, z, yaw, pitch, roll]
         })
 class MyFunc():
-    def deletedAllInputOutputFile(self,input,output):
+    @staticmethod
+    def deletedAllInputOutputFile(input,output):
         print("\nremove all files in: " + input + " out:" + output)
-        os.remove(input)
-        os.remove(output);
-        os.remove(output + ".json");
-        os.remove(output + "-unity.json");
+        # os.remove(input)
+        # os.remove(output);
+        # os.remove(output + ".json");
+        # os.remove(output + "-unity.json");
 # moving average history
 class History():
     history = {'username':{'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}}
@@ -158,10 +160,18 @@ if __name__ == "__main__":
             if process.exists:
                 processDict = process.to_dict()
                 print(f'\nDocument data: {processDict}')
+                download_blob(source_blob_name=processDict["file_path"],destination_file_name=relative("Test/" + os.path.basename(processDict["file_path"])))
+                filename = "Test/" + os.path.basename(processDict["file_path"])
+                outputPath = "output/" + os.path.basename(processDict["file_path"])
+                print("\nMain: filename = " + filename)
+                print("\nMain: outputPath = " + outputPath)
             else:
                 print(f'\nNo such document!')
                 MyFunc.deletedAllInputOutputFile(filename, outputPath);
                 exit(1)
+        else:
+            print("\nMain: filename = " + filename)
+            print("\nMain: outputPath = " + outputPath)
         ##
         if not useCPU:
             # Initialize head pose detection
@@ -192,7 +202,7 @@ if __name__ == "__main__":
             v_w = int(width * scale)+2*int(height * scale/2)
             v_h = int(height * scale)
             bird_w = 800
-            birdEye = BirdEyeModuleOnlyHead(output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h, plane_height = plane_height)
+            birdEye = BirdEyeModuleOnlyHead(useFirebase=useFirebase,output_dir=os.path.abspath('./out'),output_vid=os.path.abspath(outputPath),video_path=os.path.abspath(filename),scale = scale,opencv = cv2, closeImShow = closeImShow, bird_width = bird_w, bird_height = v_h, plane_height = plane_height)
             ## bird_img = np.zeros((int(h * scale_h), int(w * scale_w), 3), np.uint8)
             out = cv2.VideoWriter(outputPath, fourcc, fps, (v_w + bird_w, v_h))
         else:
@@ -227,6 +237,7 @@ if __name__ == "__main__":
                                              value=[255, 255, 255])  # top, bottom, left, right
                     if count == start_frame: # run setup only firstFrame
                         h, w = img.shape[:2]
+                        out = cv2.VideoWriter(outputPath, fourcc, fps, (w + bird_w, h))
                         birdEye.setupFirebase(processDict, w, h)
                 else:
                     img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
@@ -411,7 +422,7 @@ if __name__ == "__main__":
             processDict['status'] = u"SUCCESS"
             processDict['percent'] = 100
             process_ref.update(processDict)
-            MyFunc.deletedAllInputOutputFile(filename,outputPath);
+            MyFunc.deletedAllInputOutputFile(filename,outputPath)
         ######### close save status process ##########
         # When everything done, release the capture
         cap.release()
