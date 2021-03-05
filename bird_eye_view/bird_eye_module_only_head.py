@@ -56,8 +56,6 @@ class BirdEyeModuleOnlyHead:
         self.useFirebase = useFirebase
         self.bird_width = bird_width
         self.bird_height = bird_height
-        print("\nbird_width: " + str(bird_width) + " bird_height: " + str(bird_height));
-        print("\nplane_height: " + str(plane_height));
         self.plane_height = plane_height;
         self.closeImShow = closeImShow
         plot = Plot()
@@ -96,6 +94,8 @@ class BirdEyeModuleOnlyHead:
             self.output_vid = output_vid + '/'
 
         if not self.useFirebase:
+            print("\nbird_width: " + str(bird_width) + " bird_height: " + str(bird_height));
+            print("\nplane_height: " + str(plane_height));
             if os.path.exists(self.savePath):
                 global mouse_pts;
                 mouse_pts = pickle.load(open(self.savePath, 'rb'))
@@ -123,9 +123,10 @@ class BirdEyeModuleOnlyHead:
     # lines in real world if seen from above(birds eye view). Next 3 points will define 6 feet(unit length) distance in     
     # horizontal and vertical direction and those should form parallel lines with ROI. Unit length we can take based on choice.
     # Points should pe in pre-defined order - bottom-left, bottom-right, top-right, top-left, point 5 and 6 should form     
-    # horizontal line and point 5 and 7 should form verticle line. Horizontal and vertical scale will be different. 
+    # horizontal line and point 5 and 7 should form verticle line. Horizontal and vertical scale will be different.
 
-    # Function will be called on mouse events                                                          
+    def getBirdEyeSize(self):
+        return (self.bird_width,self.bird_height,self.plane_height)
 
     # img_width, img_height จาก frame size รวม padding แล้ว
     def setupFirebase(self, processDict, img_width, img_height):
@@ -135,8 +136,6 @@ class BirdEyeModuleOnlyHead:
         self.img_width = img_width
         self.img_height = img_height
         self.bird_height = img_height
-        utills = Utills(self.bird_width, self.bird_height)
-        print(f"\nBirdEyeView: Change BirdEyeSize to w:{self.bird_width} h:{self.bird_height}")
         global mouse_pts;
         mouse_pts = []
         try:
@@ -156,6 +155,12 @@ class BirdEyeModuleOnlyHead:
             print(f'\nBirdEyeView: farPoint2 ({farPoint2[0]},{farPoint2[1]})')
             farPoint3 = (float(farPointStr[4]) * self.img_width, float(farPointStr[5]) * self.img_height)
             print(f'\nBirdEyeView: farPoint3 ({farPoint3[0]},{farPoint3[1]})')
+            borderFrontWidth = borderPoint2[0] - borderPoint1[0]
+            borderRightHeight = math.sqrt(math.pow(borderPoint3[0]-borderPoint2[0],2) + math.pow(borderPoint3[1]-borderPoint2[1],2))
+            borderRatio = borderFrontWidth / borderRightHeight
+            self.bird_width = int(self.bird_height * borderRatio)
+            utills = Utills(self.bird_width, self.bird_height)
+            print(f"\nBirdEyeView: Change BirdEyeSize to w:{self.bird_width} h:{self.bird_height}")
             mouse_pts.append(borderPoint1)
             mouse_pts.append(borderPoint2)
             mouse_pts.append(borderPoint3)
@@ -167,6 +172,7 @@ class BirdEyeModuleOnlyHead:
         except Exception as e:
             print("\n BirdEyeView: Error on filebase setup\n")
             print(e)
+            exit(0);
 
     ## คำนวนองศาของระนาบ Yaw
     def getYawAdded(self):

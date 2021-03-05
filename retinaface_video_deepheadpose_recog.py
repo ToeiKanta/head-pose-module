@@ -33,6 +33,11 @@ class JsonSave():
     ### frame = frameNumber
     ### Items = array(frame, pose)
     jsonData = {
+        'bird_eye_config': {
+            # 'width': 0,
+            # 'height': 0,
+            # 'plane_height': 0
+        },
         'Items': [
             # {
             #     'frame': 0,
@@ -54,6 +59,13 @@ class JsonSave():
             'pose': self.pose
         })
         self.pose = []
+
+    def saveBirdEyeConfig(self,width,height,plane_height):
+        self.jsonData['bird_eye_config'] = {
+            'width': width,
+            'height': height,
+            'plane_height': plane_height
+        }
 
     def addDataToFrame(self,username,x,y,z,yaw,pitch,roll):
         self.pose.append({
@@ -254,6 +266,8 @@ if __name__ == "__main__":
                         h, w = img.shape[:2]
                         out = cv2.VideoWriter(outputPath, fourcc, fps, (w + bird_w, h))
                         birdEye.setupFirebase(processDict, w, h)
+                        birdEyeSize = birdEye.getBirdEyeSize()
+                        jsonSave.saveBirdEyeConfig(birdEyeSize[0],birdEyeSize[1],birdEyeSize[2])
                 else:
                     img = cv2.copyMakeBorder(img, 0, 0, int(h/2), int(h/2), cv2.BORDER_CONSTANT, value=[255, 255, 255]) # top, bottom, left, right
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
