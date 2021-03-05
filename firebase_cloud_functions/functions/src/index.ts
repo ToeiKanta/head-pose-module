@@ -39,11 +39,11 @@ const topicName = "TestApp";
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
 // eslint-disable-next-line max-len
-exports.helloWorld = functions.region(region).https
-    .onRequest((request, response) => {
-      functions.logger.info("Hello logs!", {structuredData: true});
-      response.send("Hello from Firebase!");
-    });
+// exports.helloWorld = functions.region(region).https
+//     .onRequest((request, response) => {
+//       functions.logger.info("Hello logs!", {structuredData: true});
+//       response.send("Hello from Firebase!");
+//     });
 
 exports.createFirstUser = functions.region(region).auth.user()
     .onCreate((user) => {
@@ -83,53 +83,8 @@ interface UserType {
   // eslint-disable-next-line camelcase
   updated_date?: Timestamp;
 }
-const uploadVideoToPath = async (filePath:string) => {
-  const f = filePath.split(".");
-  const fileExe = f[f.length-1].toLowerCase();
-  if (fileExe !== "mp4" && fileExe !== "mov") {
-    return functions.logger.error("file :" + fileExe + "is not support");
-  }
-  if ( filePath !== undefined ) {
-    // paths
-    // 0 = videos, 1 = <user_id>, 2 = <process_id>, 3 = 'result' or 'upload'
-    const paths = filePath.split("/");
-    const uid = paths[1];
-    const pid = paths[2];
-    const usersRef = db.collection("users").doc(uid);
-    const userDoc = await usersRef.get();
-    functions.logger.info(" uid : " + uid + " - pid : " + pid);
-    if (userDoc.exists) {
-      functions.logger.debug("Document data:", userDoc.data());
-      const userData : UserType = userDoc.data();
-      const processesId = userData.processes;
-      processesId.push(db.doc("processes/" + pid));
-      userData.processes = processesId;
-      await usersRef.update(userData);
-      const processData: ProcessType = {
-        "id": pid,
-        "owner": db.collection("users").doc(uid),
-        "file_path": filePath,
-        "status": "UPLOAD",
-        "percent": 0,
-        "process_cycle": 0,
-        "error_msg": "",
-        "created_date": Timestamp.now(),
-        "updated_date": Timestamp.now(),
-      };
-      db.collection("processes").doc(pid)
-          .set(processData, {merge: true}).then(() => {
-            functions.logger.info(`Process ${pid} created!!`);
-          });
-      // eslint-disable-next-line max-len
-      functions.logger.info(" User : " + uid + " - Add process : " + pid + " to queue");
-      functions.logger.debug("New document data:", userData);
-    } else {
-      // eslint-disable-next-line max-len
-      functions.logger.error("User : " + uid + " - Doesn't exists on Firestore Database");
-    }
-  }
-};
-exports.addTaskQueue = functions.region(region).storage.object()
+
+exports.onUploadVideoSrc = functions.region(region).storage.object()
     .onFinalize(async (object) => {
       // const fileBucket = object.bucket;
       // The Storage bucket that contains the file.
@@ -144,10 +99,60 @@ exports.addTaskQueue = functions.region(region).storage.object()
       // if (!contentType.startsWith("video/")) {
       //   return console.log("This is not a video.");
       // }
-      uploadVideoToPath(filePath);
+      const f = filePath.split(".");
+      const fileExe = f[f.length-1].toLowerCase();
+      if (fileExe !== "mp4" && fileExe !== "mov") {
+        return functions.logger.error("file :" + fileExe + "is not support");
+      }
+      if ( filePath !== undefined ) {
+        // paths
+        // eslint-disable-next-line max-len
+        // 0 = videos, 1 = <user_id>, 2 = <process_id>, 3 = 'results' or 'uploaded'
+        const paths = filePath.split("/");
+        if (paths.length != 5) {
+          return null;
+        }
+        if (paths[3] != "uploaded") {
+          return null;
+        }
+        const uid = paths[1];
+        const pid = paths[2];
+        const usersRef = db.collection("users").doc(uid);
+        const userDoc = await usersRef.get();
+        functions.logger.info(" uid : " + uid + " - pid : " + pid);
+        if (userDoc.exists) {
+          functions.logger.debug("Document data:", userDoc.data());
+          const userData : UserType = userDoc.data();
+          const processesId = userData.processes;
+          processesId.push(db.doc("processes/" + pid));
+          userData.processes = processesId;
+          await usersRef.update(userData);
+          const processData: ProcessType = {
+            "id": pid,
+            "owner": db.collection("users").doc(uid),
+            "file_path": filePath,
+            "status": "UPLOAD",
+            "percent": 0,
+            "process_cycle": 0,
+            "error_msg": "",
+            "created_date": Timestamp.now(),
+            "updated_date": Timestamp.now(),
+          };
+          db.collection("processes").doc(pid)
+              .set(processData, {merge: true}).then(() => {
+                functions.logger.info(`Process ${pid} created!!`);
+              });
+          // eslint-disable-next-line max-len
+          functions.logger.info(" User : " + uid + " - Add process : " + pid + " to queue");
+          functions.logger.debug("New document data:", userData);
+        } else {
+          // eslint-disable-next-line max-len
+          functions.logger.error("User : " + uid + " - Doesn't exists on Firestore Database");
+        }
+      }
     });
 
-exports.processUpdate = functions.region(region).firestore
+exports.processUpdateStatus = functions.region(region).firestore
     .document("processes/{processId}")
     .onUpdate(async (change, context) => {
       // https://firebase.google.com/docs/functions/firestore-events
@@ -160,8 +165,7 @@ exports.processUpdate = functions.region(region).firestore
 
       // We'll only update if the name has changed.
       // This is crucial to prevent infinite loops.
-      if (newValue.status == previousValue.status &&
-          newValue.percent == previousValue.percent) {
+      if (newValue.status == previousValue.status) {
         return null;
       }
       // if status change to QUEUE
