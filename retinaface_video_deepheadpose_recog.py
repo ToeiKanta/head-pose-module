@@ -62,6 +62,21 @@ class JsonSave():
         })
 class MyFunc():
     @staticmethod
+    def uploadResult(output,uid,pid,processRef):
+        target_blob = "videos/" + uid + "/" + pid + "/results/" + os.path.basename(output);
+        print("\nUpload all result files from: " + output + " to: " + target_blob)
+        try:
+            upload_blob(source_file_name=relative(output), destination_blob_name=target_blob)
+            upload_blob(source_file_name=relative(output + ".json"), destination_blob_name=target_blob + ".json")
+            upload_blob(source_file_name=relative(output + "-unity.json"), destination_blob_name=target_blob + "-unity.json")
+            processRef.set({
+                u'result_path': target_blob
+            }, merge=True)
+            print("\n Upload result success.")
+        except Exception as e:
+            print("\nUpload result files failed\n")
+            print(e)
+    @staticmethod
     def deletedAllInputOutputFile(input,output):
         print("\nremove all files in: " + input + " out:" + output)
         # os.remove(input)
@@ -421,16 +436,19 @@ if __name__ == "__main__":
         if useFirebase:
             processDict['status'] = u"SUCCESS"
             processDict['percent'] = 100
+            MyFunc.uploadResult(outputPath, firebase_uid, firebase_pid, process_ref)
+            MyFunc.deletedAllInputOutputFile(filename, outputPath)
             process_ref.update(processDict)
-            MyFunc.deletedAllInputOutputFile(filename,outputPath)
+
         ######### close save status process ##########
         # When everything done, release the capture
         cap.release()
         out.release()
         cv2.destroyAllWindows()
         print(f'\nEnd Success:')
-    except:
-        print(f'\nFailed with {str(sys.exc_info()[0])}')
+    except Exception as e:
+        print(f'\nMain: Error\n')
+        print(e)
         if useFirebase:
             processDict['status'] = u"FAILED"
             processDict['percent'] = 100

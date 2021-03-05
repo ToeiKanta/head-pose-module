@@ -18,8 +18,6 @@ from google.cloud import storage
 # export GOOGLE_APPLICATION_CREDENTIALS="/Users/admin/Google Drive/Colab Notebooks/head-pose-module/deepheadposeapp-7b346656fe5c.json"
 
 def download_blob(bucket_name = 'deepheadposeapp.appspot.com', source_blob_name = "", destination_file_name = ""):
-    if bucket_name == 'default':
-        bucket_name = 'deepheadposeapp.appspot.com'
     """Downloads a blob from the bucket."""
     # bucket_name = "your-bucket-name"
     # source_blob_name = "storage-object-name"
@@ -43,14 +41,12 @@ def download_blob(bucket_name = 'deepheadposeapp.appspot.com', source_blob_name 
         )
     )
 
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    if bucket_name == 'default':
-        bucket_name = 'deepheadposeapp.appspot.com'
+def upload_blob(bucket_name = 'deepheadposeapp.appspot.com', source_file_name = "", destination_blob_name = ""):
     """Uploads a file to the bucket."""
     # bucket_name = "deepheadposeapp.appspot.com"
     # source_file_name = "local/path/to/file"
     # destination_blob_name = "storage-object-name"
-
+    print("\nCloudStorage: Upload file from: " + source_file_name + " to:" + destination_blob_name)
     storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(destination_blob_name)
