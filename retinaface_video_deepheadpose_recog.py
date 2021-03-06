@@ -91,10 +91,10 @@ class MyFunc():
     @staticmethod
     def deletedAllInputOutputFile(input,output):
         print("\nremove all files in: " + input + " out:" + output)
-        # os.remove(input)
-        # os.remove(output);
-        # os.remove(output + ".json");
-        # os.remove(output + "-unity.json");
+        os.remove(input)
+        os.remove(output);
+        os.remove(output + ".json");
+        os.remove(output + "-unity.json");
 # moving average history
 class History():
     history = {'username':{'lm': [], 'bbox': [], 'rvec': [], 'tvec': [], 'cm': [], 'dc': []}}
@@ -157,6 +157,7 @@ if __name__ == "__main__":
     # close head-pose
     print('close_recognition : {}'.format(args["close_recognition"]))
     print('close_bird_eye : {}'.format(args["close_bird_eye"]))
+    print('use_firebase : {}'.format(args["use_firebase"]))
     plane_height = args["plane_height"]
     closeBirdEye = args["close_bird_eye"]
     closeImShow = args["close_show_image"]
@@ -181,9 +182,9 @@ if __name__ == "__main__":
             db = firestore.client()
             firebase_uid = args["uid"]
             firebase_pid = args["pid"]
+            print("firebase: uid:" + firebase_uid + " pid:" + firebase_pid)
             process_ref = db.collection(u'processes').document(firebase_pid)
             process = process_ref.get()
-            print(f'\nuid:{firebase_uid} pid:{firebase_pid}')
             if process.exists:
                 processDict = process.to_dict()
                 print(f'\nDocument data: {processDict}')
@@ -465,7 +466,7 @@ if __name__ == "__main__":
         if useFirebase:
             processDict['status'] = u"FAILED"
             processDict['percent'] = 100
-            processDict['error_msg'] = str(sys.exc_info()[0])
+            processDict['error_msg'] = str(e)
             MyFunc.deletedAllInputOutputFile(filename,outputPath);
             process_ref.update(processDict)
 
