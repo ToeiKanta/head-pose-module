@@ -38,8 +38,10 @@ def download_video(video_path):
     return status, err_msg
 
 def process_video(video_path,scale = 0.8):
-    logging.info("[run step 2] Process_video : %s\n", video_path)
-    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni', '-nr' ,'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80'],shell=False)
+    # video_path = videos/0144sldRQQQtNWNOebxDr5Gynbz2/Z2p6GnvRJz2pGVu/uploaded/Classroom3s.mp4
+    logging.info("[run process] Process_video : %s\n", video_path)
+    vidPathArr = video_path.split('/') # 0 videos 1 user_id 2 process_id 3 filename
+    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni', '-nr' ,'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80','--use-firebase','-uid',vidPathArr[1],'-pid',vidPathArr[2]],shell=False)
     status = consts.DONE_STATUS
     err_msg = ""
     return status, err_msg
@@ -57,24 +59,24 @@ def start_service(return_vals, message):
         # logging.info("Processing message: %s" % message.message.data)
         video_path = message.message.data.decode("utf-8")
 
-        status, err_msg = download_video(video_path)
-        if status!= consts.DONE_STATUS:
-            logging.error("Failed to run step1 - Download video!")
-            record_job_status(message, status, err_msg, return_vals)
-            return
+        # status, err_msg = download_video(video_path)
+        # if status!= consts.DONE_STATUS:
+        #     logging.error("Failed to run step1 - Download video!")
+        #     record_job_status(message, status, err_msg, return_vals)
+        #     return
         status, err_msg = process_video(video_path)
         if status != consts.DONE_STATUS:
-            logging.error("Failed to run step2! - Process video")
+            logging.error("Failed to run process! - Process video")
             record_job_status(message, status, err_msg, return_vals)
             return
 
-        src_path = 'output/' + os.path.basename(video_path)
-        video_upload_path = 'videos/user_id/process_id/results/' + os.path.basename(video_path) + '-result.mov'
-        status, err_msg = upload_video(src_path, video_upload_path)
-        if status != consts.DONE_STATUS:
-            logging.error("Failed to run step3! - Upload video result")
-            record_job_status(message, status, err_msg, return_vals)
-            return
+        # src_path = 'output/' + os.path.basename(video_path)
+        # video_upload_path = 'videos/user_id/process_id/results/' + os.path.basename(video_path) + '-result.mov'
+        # status, err_msg = upload_video(src_path, video_upload_path)
+        # if status != consts.DONE_STATUS:
+        #     logging.error("Failed to run step3! - Upload video result")
+        #     record_job_status(message, status, err_msg, return_vals)
+        #     return
         logging.info("Message completely processed: %s" % message.message.data)
         # may also consider recording the job status in your mysql database
         # update_job_status(message, "DONE")  # not implement

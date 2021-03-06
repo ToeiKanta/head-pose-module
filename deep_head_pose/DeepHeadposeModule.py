@@ -78,9 +78,9 @@ class DeepHeadposeModule:
 
         yaw, pitch, roll = self.model(img)
 
-        yaw_predicted = F.softmax(yaw)
-        pitch_predicted = F.softmax(pitch)
-        roll_predicted = F.softmax(roll)
+        yaw_predicted = F.softmax(yaw,dim=1) # to do
+        pitch_predicted = F.softmax(pitch,dim=1) # to do
+        roll_predicted = F.softmax(roll,dim=1) # to do
         # Get continuous predictions in degrees.
         yaw_predicted = torch.sum(yaw_predicted.data[0] * self.idx_tensor) * 3 - 99
         pitch_predicted = torch.sum(pitch_predicted.data[0] * self.idx_tensor) * 3 - 99
