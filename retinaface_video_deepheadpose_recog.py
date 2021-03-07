@@ -380,7 +380,7 @@ if __name__ == "__main__":
                         # cv2.circle(img, point, 1, Color.yellow,-1)
                 # draw head detector
                 cv2.rectangle(
-                    img, (x,y), (w,h), color=(0, 255, 0), thickness=2
+                    img, (x,y), (w,h), color=(0, 255, 0), thickness=1
                 )
                 used_face += 1
     ######### Draw Position Saved #########

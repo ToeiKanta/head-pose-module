@@ -6,9 +6,9 @@ from google.cloud import pubsub_v1
 from .consts import consts
 
 # https://towardsdatascience.com/a-python-implementation-of-concurrent-consumers-for-google-cloud-platform-pub-sub-991ae8b9841d
-ACK_DEADLINE_SECONDS = 500  # 500 seconds to renew the ack window
+ACK_DEADLINE_SECONDS = 400  # 500 seconds to renew the ack window
 ACK_DEADLINE_TIMES = 20  # times to renuew the ack window [this will handle video process time <= ACK_DEADLINE_SECONDS*ACK_DEADLINE_TIMES secs]
-ACK_DEADLINE_BUFFER_SECONDS = 200
+ACK_DEADLINE_BUFFER_SECONDS = 600
 ACK_SLEEP_INTERVALS_SECONDS = 10  # ACK_DEADLINE_SECONDS should greater than ACK_SLEEP_INTERVALS_SECONDS
 SCHEDULE_INTERVAL_SECONDS = 10
 
