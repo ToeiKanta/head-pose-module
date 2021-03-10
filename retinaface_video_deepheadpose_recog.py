@@ -87,6 +87,9 @@ class MyFunc():
             print("\n Upload result success.")
         except Exception as e:
             print("\nUpload result files failed\n")
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             print(e)
     @staticmethod
     def deletedAllInputOutputFile(input,output):
@@ -462,6 +465,9 @@ if __name__ == "__main__":
         cv2.destroyAllWindows()
     except Exception as e:
         print(f'\nMain: Error\n')
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
         print(e)
         if useFirebase:
             processDict['status'] = u"FAILED"

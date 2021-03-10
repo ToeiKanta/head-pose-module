@@ -37,7 +37,7 @@ def download_video(video_path):
     err_msg = ""
     return status, err_msg
 
-def process_video(video_path,scale = 0.8):
+def process_video(video_path,scale = 1.0):
     # video_path = videos/0144sldRQQQtNWNOebxDr5Gynbz2/Z2p6GnvRJz2pGVu/uploaded/Classroom3s.mp4
     logging.info("[run process] Process_video : %s\n", video_path)
     vidPathArr = video_path.split('/') # 0 videos 1 user_id 2 process_id 3 filename
