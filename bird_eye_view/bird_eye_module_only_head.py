@@ -171,6 +171,9 @@ class BirdEyeModuleOnlyHead:
             self.firstSetup = False
         except Exception as e:
             print("\n BirdEyeView: Error on filebase setup\n")
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
             print(e)
             exit(0);
 
