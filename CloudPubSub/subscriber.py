@@ -101,7 +101,8 @@ def process_messages(fn, subscriber, subscription_path):
                 else:
                     # task is not completed, do not acknowledge the message
                     logging.error("failed to process message error num %s err msg %s" % (status, err_msg))
-
+                    # task fail but acknowledge the message - edit by Toei
+                    subscriber.acknowledge(request={"subscription": subscription_path, "ack_ids": [ack_id]})
                 workers.pop(worker)
                 logging.info("acked message \n%s\n with id %s return info \n%s" % (
                     msg_data, ack_id, return_info)

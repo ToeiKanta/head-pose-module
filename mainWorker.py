@@ -41,7 +41,7 @@ def process_video(video_path,scale = 1.0):
     # video_path = videos/0144sldRQQQtNWNOebxDr5Gynbz2/Z2p6GnvRJz2pGVu/uploaded/Classroom3s.mp4
     logging.info("[run process] Process_video : %s\n", video_path)
     vidPathArr = video_path.split('/') # 0 videos 1 user_id 2 process_id 3 filename
-    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni', '-nr' ,'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80','--use-firebase','-uid',vidPathArr[1],'-pid',vidPathArr[2]],shell=False)
+    subprocess.check_call(['python', 'retinaface_video_deepheadpose_recog.py', '-i', 'Test/'+os.path.basename(video_path), '-o' ,'output/' + os.path.basename(video_path), '-ni', '-nr' ,'-nt', '-scale',str(scale), '-fd' ,'-p', '-80','-ph','80','-fs','1','--use-firebase','-uid',vidPathArr[1],'-pid',vidPathArr[2]],shell=False)
     status = consts.DONE_STATUS
     err_msg = ""
     return status, err_msg
